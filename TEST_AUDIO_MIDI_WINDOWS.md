@@ -1,18 +1,28 @@
 # Test audio and Native Instruments Maschine Studio
 
-Use the full extracted Build 060 source folder on Windows with Python 3.11+ installed. No verified installer is included.
+Use the installed app. Python and source files are not needed.
 
-1. Connect your audio interface/headphones and Maschine Studio. Configure NI drivers and Controller Editor MIDI mode so Windows exposes the controller's MIDI input.
-2. Double-click TEST_AUDIO_MIDI_DOUBLE_CLICK.cmd. This creates a local .test-venv, installs the runtime dependencies, and opens STREET SOUND CHECK.
-3. Select your Windows output device, choose START AUDIO, then click BASS LABB or KEY 88. Check that sound is audible and note releases stop normally.
-4. Select the Maschine Studio MIDI input and CONNECT. With MIDI PAD MODE unchecked, play pads to test instrument note-on/off. The MIDI IN indicator should respond. Choose ALL channels initially.
-5. For sample pads, open the 32-pad deck, load a 16-bit PCM WAV into a pad, enable MIDI PAD MODE, and send its note (36 maps to pad 1; 67 maps to pad 32). This diagnostic uses absolute notes, not the workstation's bank-aware command mappings.
-6. For transport and jog, open START_EXACT_LAYOUT.bat and MASCHINE SETUP. Scan/select the Studio input and CONNECT. Choose a command and mode, click LEARN NEXT PHYSICAL CONTROL, and operate that control once. The learn event is consumed; operate it again to test the command.
-7. For sixteen pads shared across DAW banks, learn BANK PAD 1–16 in button mode and map BANK NEXT/BANK PREV to controller buttons. PAD 1–32 remain absolute assignments. Choose the encoder mode reported by Controller Editor for the jog wheel; do not assume the factory map.
-8. Save the project and reopen it. Both legacy MIDI learn mappings and the Studio router's mappings should return. SAVE PROFILE JSON also supports a reusable controller profile.
+## Audio first
 
-Close/disconnect the standalone sound/MIDI test before opening that MIDI input in the workstation; some Windows MIDI drivers allow only one client at a time.
+1. Open Windows Start and search for **STREET SOUND CHECK**. Open **STREET SOUND CHECK (Audio + MIDI)** under BOOM BAP TOOLBOXX.
+2. Select your headphones, speakers or audio interface under **Windows output device**. Click **REFRESH DEVICES** if needed, then **START AUDIO**.
+3. Click **BASS LABB** or **KEY 88**. You should hear a note and see the output meter move. Start with your speaker/headphone volume low.
+4. If silent, use **EXPORT OFFLINE TEST WAV** and play the saved WAV in Windows. Audible exported sound proves the render path; it does not verify live device output. Note any message shown at the bottom of Sound Check.
 
-If live sound is silent, use EXPORT OFFLINE TEST WAV and play the WAV in Windows. Audible exported audio proves the render path, not live sound-device output. TEST_MIDI_DOUBLE_CLICK.cmd provides the detailed raw MIDI event log for checking note/CC numbers and encoder values. Record the selected device, incoming event, command, and observed result when reporting an issue.
+## MIDI input
 
-Cloud verification: 111 automated tests plus actual Tk window checks passed. The audio engine renders non-silent stereo WAV offline. This does not verify Windows device playback, NI HID integration, Studio screens or LEDs, or the physical hardware.
+1. Connect Maschine Studio and use NI Controller Editor MIDI mode so Windows exposes its MIDI port. Close other software using that port if the driver allows only one client.
+2. In Sound Check, click MIDI **SCAN**, select the Studio input and **CONNECT**.
+3. Set CHANNEL to **ALL** and leave **MIDI PAD MODE** unchecked. Select BASS LABB or KEY 88 under MIDI → INSTRUMENT.
+4. Press/release a pad. The **MIDI IN** indicator should respond, the status should show the incoming event, and the selected instrument should sound when audio is running.
+5. To test samples, open **OPEN 32-PAD STREET DECK**, load a mono/stereo 16-bit PCM WAV into pad 1 and enable **MIDI PAD MODE**. This diagnostic uses notes 36–67 → pads 1–32. Your custom Studio template may send other notes; use the DAW's learn function for those addresses. Build 063 preserves pad velocity in this diagnostic; Build 062 uses full-strength sample hits in Sound Check.
+
+## Use the controller in the DAW
+
+Close Sound Check before connecting the same MIDI input in TOOLBOXX. In Cook Up, open **MASCHINE SETUP**, select the Studio input and **CONNECT**. Open **STUDIO MAP → TEACH 16 PADS** and press the requested pads in order. Learned BANK PAD commands follow bank A/B.
+
+Use the map's context selector for ARRANGE, LOOP, SOUND, FX or BROWSE. Learn the eight physical soft keys to SURFACE KEY 1–8 and encoders to SURFACE KNOB 1–8 + with the actual relative mode set in Controller Editor. On LOOP, knobs 1/3/4 change loop position/start/length; soft keys 4/5 set whole-song range and toggle looping. Jog and transport commands can be learned separately. Save the project or controller map afterward.
+
+For the main DAW's output, choose **DAW** in the top bar to open the underlying workstation's AUDIO OUTPUT controls. Scan/select your output and click **START**. Audio does not start automatically.
+
+If something fails, report the selected output, whether the on-screen instrument button makes sound, whether MIDI IN flashes, and the exact status/error text. Studio physical screens and LEDs are not driven yet.

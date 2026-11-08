@@ -36,7 +36,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Source syntax check failed.' }
   & $venvPy '.\verify_package.py'
   if ($LASTEXITCODE -ne 0) { throw 'Package preflight failed.' }
-  & $venvPy -m PyInstaller --noconfirm --clean --windowed --onedir --name BOOM_BAP_TOOLBOXX --distpath '.\build' --workpath '.\work' --specpath '.\work' --paths (Join-Path $PSScriptRoot 'app') --add-data ((Join-Path $PSScriptRoot 'app\AUDIO_TEST.wav') + ';.') --collect-all sounddevice --collect-all soundcard --collect-all numpy --collect-all mido --collect-all rtmidi --collect-all PIL '.\app\toolboxx_launcher.py'
+  & $venvPy -m PyInstaller --noconfirm --clean --windowed --onedir --name BOOM_BAP_TOOLBOXX --distpath '.\build' --workpath '.\work' --specpath '.\work' --paths (Join-Path $PSScriptRoot 'app') --add-data ((Join-Path $PSScriptRoot 'app\AUDIO_TEST.wav') + ';.') --add-data ((Join-Path $PSScriptRoot 'release.json') + ';.') --collect-all sounddevice --collect-all soundcard --collect-all numpy --collect-all mido --collect-all rtmidi --collect-all PIL '.\app\toolboxx_launcher.py'
   if ($LASTEXITCODE -ne 0) { throw 'Executable packaging failed.' }
   $exe = Join-Path $PSScriptRoot 'build\BOOM_BAP_TOOLBOXX\BOOM_BAP_TOOLBOXX.exe'
   if (-not (Test-Path $exe)) { throw 'Packaged application executable missing.' }

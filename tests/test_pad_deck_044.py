@@ -26,6 +26,7 @@ class PadDeckTests(unittest.TestCase):
   for note in range(36,68):
    self.assertTrue(a.handle_pad_midi(SimpleNamespace(type='note_on',note=note,velocity=90,channel=2),2))
   self.assertEqual(a.trigger_pad.call_count,32)
+  a.trigger_pad.assert_called_with(31,90/127.)
   self.assertFalse(a.handle_pad_midi(SimpleNamespace(type='note_on',note=68,velocity=90,channel=2),2))
   self.assertFalse(a.handle_pad_midi(SimpleNamespace(type='note_off',note=36,velocity=0,channel=2),2))
   self.assertFalse(a.handle_pad_midi(SimpleNamespace(type='note_on',note=36,velocity=90,channel=2),1))

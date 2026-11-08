@@ -14,7 +14,8 @@ def verify(root=ROOT):
         raise ValueError('Installer name disagrees with release build')
     required = ['toolboxx_launcher.py', 'startup_check.py', 'launch_reference.py',
                 'toolboxx.py', 'cookup_ui.py', 'labb_engine.py',
-                'midi_automation_engine.py', 'AUDIO_TEST.wav']
+                'midi_automation_engine.py', 'app_version.py', 'app_updates.py',
+                'update_window.py', 'AUDIO_TEST.wav']
     for name in required:
         path = app / name
         if not path.is_file() or not path.stat().st_size:

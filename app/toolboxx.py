@@ -214,6 +214,10 @@ class App:
   self.scan_audio();self.scan_midi()
  def show_workstation(self):
   self.root.deiconify();self.root.lift()
+ def open_updates(self):
+  from update_window import UpdateWindow
+  if hasattr(self,'update_window') and self.update_window.win.winfo_exists():self.update_window.win.lift()
+  else:self.update_window=UpdateWindow(self)
  def open_cookup(self):
   from cookup_ui import CookUpWindow
   if hasattr(self,'cookup_window') and self.cookup_window.win.winfo_exists():self.cookup_window.win.lift();self.cookup_window.refresh()

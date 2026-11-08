@@ -28,6 +28,9 @@ def run():
         root.update()
         assert app.labbs.serialize()==before, 'Opening the sound editor changed the patch'
         app.open_mix_rack()
+        app.open_updates()
+        assert app.update_window.win.winfo_exists(), 'Update window did not open'
+        assert not app.update_window.busy, 'Updater started a background request without a click'
         window.refresh()
         root.update()
         if errors:

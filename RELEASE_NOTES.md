@@ -1,17 +1,15 @@
-# TOOLBOXX Build 062 — Studio workflow and smoother startup
+# TOOLBOXX Build 063 — in-app updates
 
-Download **BOOM_BAP_TOOLBOXX_Setup_062.exe**, open it and click **Install TOOLBOXX**. One installer includes the application, Python runtime and audio/MIDI libraries. Setup adds a desktop shortcut and opens Cook Up when finished. No separate Python installation or source files are needed.
+Download **BOOM_BAP_TOOLBOXX_Setup_063.exe** and install over Build 062. The same TOOLBOXX app and design remain in place.
 
-The existing charcoal, rust, mint and worn-metal TOOLBOXX interface is preserved.
+- **MENU → CHECK FOR UPDATES…** checks official TOOLBOXX GitHub releases, including development builds.
+- Download the next installer in the background, verify its size, Windows executable header and SHA256, then save your project and choose **INSTALL UPDATE**. The file is verified again before launch. Setup opens and the DAW closes only after your confirmation.
+- Offline requests, incomplete downloads and failed installer launches leave the current app installed. Checking or downloading does not stop playback. There are no automatic startup checks or forced installations.
+- Installed build identity comes from bundled release metadata, so the UI and update checker use the same version.
+- The standalone Sound Check sample-pad mode now preserves MIDI hit velocity too.
 
-- Opens the main Cook Up workspace directly. The DAW button still opens the underlying workstation.
-- Text entry keeps normal copy/paste/Delete behavior; arranger shortcuts do not edit clips while typing. Ctrl+Y redo is available in Cook Up. Escape no longer closes the workspace.
-- Shutdown releases MIDI, sends the existing panic cleanup, stops audio and avoids repeated device cleanup.
-- Sample pads now preserve incoming note velocity, including learned absolute pads, bank-relative pads and legacy MIDI mappings. Soft hits play quieter; overlapping voices retain independent strength. Mouse/step triggers retain their full-strength default.
-- Adds a dedicated Studio-style Loop context: knob 1 moves the loop, knob 3 adjusts its start, knob 4 adjusts length; soft button 4 selects the whole song and button 5 toggles looping. Choose LOOP in STUDIO MAP or MIDI-learn SURFACE LOOP. Contextual keys and knobs follow the active page.
-- New map navigation targets our sound banks, instrument editor, FX rack and arranger context. Existing saved user mappings remain intact.
-- Preserves 22 LABBs, 32 sample slots, guided sixteen-pad learn, editable controller map, MRQ/TRK/ARR range editing, our original sound bank, real master-bus FX and isolated WAV bounce.
+176 automated tests pass locally. The Windows pipeline tests packaging, installation over Build 062, user-file preservation, installed startup, normal launch/close and uninstall before publishing.
 
-162 automated tests pass in the source checkpoint. Publication requires Windows unit tests, packaged startup, installer compilation, installation, installed startup and uninstall checks. The Windows runner uses Server 2022; actual Windows 11 audio devices and Maschine Studio hardware still need testing.
+To test audio and MIDI, use the Start Menu **STREET SOUND CHECK (Audio + MIDI)** shortcut. Select your output, choose START AUDIO, and click BASS LABB or KEY 88. Select the Studio MIDI input and CONNECT; use ALL channels and leave MIDI PAD MODE unchecked for instrument testing. Close/disconnect Sound Check before connecting that port in the DAW. See TEST_AUDIO_MIDI_WINDOWS.md.
 
-This is an **unsigned development build**. Windows may show an unknown-publisher warning. The physical Studio screens/LEDs and native HID backend are not implemented; the two display areas are software mirrors. External VST/NKS hosting, full scene hierarchy and velocity recording into the boolean step matrix are not included. Other FX marked planned remain planned. Project audio is referenced rather than embedded. This release does not claim a finished commercial DAW or complete Maschine/MPC parity.
+This is an unsigned development installer. SHA256 checks detect corrupt or mismatched downloads; they do not replace Windows publisher signing. Windows may show an unknown-publisher warning. Physical Studio screens/LEDs, external VST hosting and full scene hierarchy remain unfinished; actual Windows 11 audio/controller performance still needs testing.

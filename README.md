@@ -1,12 +1,16 @@
-# BOOM BAP TOOLBOXX — Build 062
+# BOOM BAP TOOLBOXX — Build 063
 
 Native Windows DAW prototype with Cook Up Matrix, 22 LABBs, a 32-slot sample deck, Track City, our sound banks, real master FX, and Native Instruments Maschine Studio control mapping.
 
 ## Windows installer
 
-[Download Build 062](https://github.com/pardenself-boop/Pardenself/releases/tag/build-062). Choose **BOOM_BAP_TOOLBOXX_Setup_062.exe**. This single installer includes the app, Python runtime, audio/MIDI libraries and sound-check shortcut. You do not need to install Python or manage source files to run the installed app.
+[Download Build 063](https://github.com/pardenself-boop/Pardenself/releases/tag/build-063). Choose **BOOM_BAP_TOOLBOXX_Setup_063.exe**. This single installer includes the app, Python runtime, audio/MIDI libraries and sound-check shortcut. You do not need to install Python or manage source files to run the installed app.
 
-Build 062 is an unsigned development release. Windows 11 audio playback and physical Maschine Studio operation still need testing on the target PC. Native Studio HID, screens/LEDs, a VST build, and FX explicitly marked as previews are not implemented.
+Build 063 is an unsigned development release. Windows 11 audio playback and physical Maschine Studio operation still need testing on the target PC. Native Studio HID, screens/LEDs, a VST build, and FX explicitly marked as previews are not implemented.
+
+## Updates
+
+Open **MENU → CHECK FOR UPDATES…**, check, download, then save your project and choose **INSTALL UPDATE**. Downloads are verified against the release SHA256 before setup can run. Checking and downloading do not stop playback; installation closes the app only after you confirm. Development builds are included. No automatic checks or forced updates run during a session.
 
 ## Current UI
 
@@ -22,7 +26,7 @@ The Start Menu **STREET SOUND CHECK (Audio + MIDI)** shortcut opens the test win
 
 ## Source and build evidence
 
-- [Build 062 details](BUILD_062_README.md)
+- [Build 063 details](BUILD_063_README.md)
 - [Workflow references and parity gaps](WORKFLOW_REFERENCE_061.md)
 - [Controller guide](CONTROLLER_MASCHINE_STUDIO.md)
 - [Windows test guide](TEST_AUDIO_MIDI_WINDOWS.md)

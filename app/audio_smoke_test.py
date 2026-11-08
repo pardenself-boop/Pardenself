@@ -145,8 +145,8 @@ class AudioTest:
                     self.pad_buttons[i].configure(text=Path(p).stem[:11] if p else f'PAD {i+1:02}',bg='#bd693b' if p else '#7043ad')
             self.status.set('Loaded 32-pad kit: '+Path(path).name)
         except Exception as exc:self.status.set('Kit load failed: '+str(exc))
-    def trigger_pad(self,index):
-        self.engine.trigger(index)
+    def trigger_pad(self,index,velocity=1.0):
+        self.engine.trigger(index,velocity)
         self.status.set(f'PAD {index+1:02} triggered'+(' — START AUDIO to hear' if not self.engine.stream else ''))
     def release_keyboard(self):
         for note,inst in list(self.keyboard_held.values()):
@@ -226,7 +226,7 @@ class AudioTest:
         if channel_filter is not None and getattr(msg,'channel',0)!=channel_filter:return False
         note=getattr(msg,'note',-1)
         if not 36<=note<=67:return False
-        self.trigger_pad(note-36)
+        self.trigger_pad(note-36,msg.velocity/127.)
         return True
     def disconnect_midi(self):
         if self.midi_port:

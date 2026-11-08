@@ -6,13 +6,14 @@ from pathlib import Path
 from labb_engine import LABBS
 from feature_registry import FEATURES, AVAILABLE, read_visibility, write_visibility
 from ui_shortcuts import dispatch_shortcut
+from app_version import BUILD
 BG='#100f10'; PANEL='#24201e'; PANEL2='#161516'; MINT='#82ceb5'; ORANGE='#e38b42'; BURG='#713a33'; CREAM='#e6d2b3'; PURPLE='#775c8c'; DIM='#ad9a84'
 COLORS=[ORANGE,MINT,PURPLE,BURG,MINT,ORANGE]
 ORB_NAMES=['HISTORY','SOUL','JAZZ','DEEP','DUST','SPACE','TAPE','VINYL']
 
 class CookUpWindow:
  def __init__(self,app):
-  self.app=app;self.win=tk.Toplevel(app.root);self.win.title('BOOM BAP TOOLBOXX | COOK UP MATRIX | BUILD 062');self.win.geometry('1500x900');self.win.minsize(1050,680);self.win.configure(bg=BG);self.win.after_idle(self._maximize)
+  self.app=app;self.win=tk.Toplevel(app.root);self.win.title(f'BOOM BAP TOOLBOXX | COOK UP MATRIX | BUILD {BUILD}');self.win.geometry('1500x900');self.win.minsize(1050,680);self.win.configure(bg=BG);self.win.after_idle(self._maximize)
   self.selected_orb=1;self.arr_view_start=0.0;self.arr_zoom=1.0;self.mouse_pan_anchor=None;self.loop_drag=None;self.range_drag=None;self.macro=app.labbs.orbs;self.matrix_page=0;self.current_suite=app.labbs.selected;self._build();self.refresh()
   for key,cmd in [('<Control-z>','UNDO'),('<Control-y>','REDO'),('<Control-c>','RANGE COPY'),('<Control-x>','RANGE CUT'),('<Control-v>','RANGE PASTE'),('<Control-d>','RANGE DUPLICATE'),('<Delete>','RANGE DELETE')]:self.win.bind(key,lambda e,c=cmd:dispatch_shortcut(e,lambda:self.act(c)))
   self.win.after(200,self.poll)
@@ -123,6 +124,8 @@ class CookUpWindow:
   Planned features remain visible in the catalog but cannot be falsely enabled.
   """
   menu=tk.Menu(self.win,tearoff=False,bg=PANEL,fg=CREAM,activebackground=BURG,activeforeground=CREAM)
+  menu.add_command(label='CHECK FOR UPDATES…',command=self.app.open_updates)
+  menu.add_separator()
   for group,labels in FEATURES.items():
    sub=tk.Menu(menu,tearoff=False,bg=PANEL,fg=CREAM,activebackground=BURG,activeforeground=CREAM)
    for label in labels:
