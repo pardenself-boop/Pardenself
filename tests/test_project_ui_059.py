@@ -48,7 +48,7 @@ class ProjectTests(unittest.TestCase):
             self.assertTrue(restored.patterns['main'][31][0])
             self.assertEqual(restored.notes.serialize(), app.notes.serialize())
             self.assertEqual(restored.bpm, 93.5)
-            self.assertIn(str(moved / 'sample.wav'), restored.engine.regions.sources)
+            self.assertIn(str((moved / 'sample.wav').resolve()), list(restored.engine.regions.sources))
             restored.engine.trigger(31)
             self.assertGreater(max(abs(v) for v in restored.engine.render(1024)), 0)
             self.assertFalse(restored.playing)
