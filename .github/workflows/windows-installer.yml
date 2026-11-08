@@ -39,6 +39,8 @@ jobs:
           $smoke = Start-Process -FilePath $installedExe -ArgumentList '--smoke-test' -PassThru
           if (!$smoke.WaitForExit(60000)) { $smoke.Kill(); throw 'Installed app startup timed out' }
           if ($smoke.ExitCode -ne 0) { throw 'Installed app startup failed' }
+          & ./.builder-venv/Scripts/python.exe ./verify_windows_launch.py --exe $installedExe --screenshot validation/windows-installed-ui.png
+          if ($LASTEXITCODE -ne 0) { throw 'Normal installed workspace launch failed' }
           $uninstaller = Join-Path $installDir 'unins000.exe'
           $uninstall = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru
           if ($uninstall.ExitCode -ne 0) { throw 'Uninstall check failed' }
@@ -57,6 +59,7 @@ jobs:
           path: |
             BUILD_*_LOG.txt
             BUILD_DEPENDENCIES.txt
+            validation/windows-installed-ui.png
           if-no-files-found: warn
 
   release:

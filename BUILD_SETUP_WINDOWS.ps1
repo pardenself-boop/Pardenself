@@ -1,4 +1,4 @@
-param([switch]$NoOpen)
+param([switch]$NoOpen, [switch]$RequireTrustedSignature, [string]$SigningCertificateThumbprint = $env:TOOLBOXX_SIGN_THUMBPRINT)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 Set-Location $PSScriptRoot
@@ -6,6 +6,7 @@ $release = Get-Content (Join-Path $PSScriptRoot 'release.json') -Raw | ConvertFr
 $log = Join-Path $PSScriptRoot ('BUILD_' + $release.build + '_LOG.txt')
 Start-Transcript -Path $log -Force | Out-Null
 try {
+  if ($RequireTrustedSignature -and -not $SigningCertificateThumbprint) { throw 'A verified code-signing certificate is required for this release. Configure the signing identity first.' }
   Write-Host ("BOOM BAP TOOLBOXX - Build " + $release.build + " Windows installer") -ForegroundColor Cyan
   if ($env:OS -ne 'Windows_NT') { throw 'This builder requires Windows.' }
   if (-not [Environment]::Is64BitOperatingSystem) { throw 'Windows 11 64-bit is required.' }
@@ -39,6 +40,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Executable packaging failed.' }
   $exe = Join-Path $PSScriptRoot 'build\BOOM_BAP_TOOLBOXX\BOOM_BAP_TOOLBOXX.exe'
   if (-not (Test-Path $exe)) { throw 'Packaged application executable missing.' }
+  if ($SigningCertificateThumbprint) { & (Join-Path $PSScriptRoot 'SIGN_RELEASE_WINDOWS.ps1') -InputFile $exe -CertificateThumbprint $SigningCertificateThumbprint }
   $smoke = Start-Process -FilePath $exe -ArgumentList '--smoke-test' -PassThru
   if (-not $smoke.WaitForExit(60000)) { $smoke.Kill(); throw 'Packaged startup timed out.' }
   if ($smoke.ExitCode -ne 0) { throw 'Packaged startup failed.' }
@@ -56,11 +58,13 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
   $setup = Join-Path $PSScriptRoot ('dist\' + $release.installer)
   if (-not (Test-Path $setup)) { throw 'Setup.exe output missing.' }
+  if ($SigningCertificateThumbprint) { & (Join-Path $PSScriptRoot 'SIGN_RELEASE_WINDOWS.ps1') -InputFile $setup -CertificateThumbprint $SigningCertificateThumbprint }
   & $venvPy '.\verify_release.py'
   if ($LASTEXITCODE -ne 0) { throw 'Release artifact validation failed.' }
   Get-FileHash -Algorithm SHA256 $setup | Format-List | Out-File -Encoding utf8 '.\dist\SHA256.txt'
   Write-Host "SUCCESS: $setup" -ForegroundColor Green
-  Write-Host 'This installer is unsigned and needs Windows 11 installation and hardware testing.'
+  if ($SigningCertificateThumbprint) { Write-Host 'Installer publisher signature verified by Windows.' }
+  else { Write-Host 'Publisher signing is not configured. This installer is unsigned.' }
   if (-not $NoOpen) { Invoke-Item (Join-Path $PSScriptRoot 'dist') }
 } catch {
   Write-Host "BUILD FAILED: $($_.Exception.Message)" -ForegroundColor Red

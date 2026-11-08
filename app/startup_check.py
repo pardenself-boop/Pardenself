@@ -18,6 +18,11 @@ def run():
         assert len(app.pattern) == 32, 'Missing sample pads'
         app.open_dual_screen()
         assert app.controller_map_window.canvas.winfo_exists(), 'Controller surface did not open'
+        for page in app.surface_context.PAGES:
+            app.surface_context.set_page(page)
+            app.controller_map_window.draw()
+            root.update()
+        app.surface_context.set_page('ARRANGE')
         before=app.labbs.serialize()
         app.open_sound_browser()
         root.update()

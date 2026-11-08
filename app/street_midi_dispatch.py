@@ -5,13 +5,14 @@ Per-channel sustain and MIDI panic are handled here before command mapping.
 """
 
 class StreetMidiDispatch:
-    def __init__(self, router, automation, command, note_on, note_off, parameter_change=None):
+    def __init__(self, router, automation, command, note_on, note_off, parameter_change=None, pad_command=None):
         self.router = router
         self.automation = automation
         self.command = command
         self.note_on = note_on
         self.note_off = note_off
         self.parameter_change = parameter_change or (lambda changes: None)
+        self.pad_command = pad_command
         self.held = set()
         self.deferred = set()
         self.sustain = set()
@@ -39,6 +40,11 @@ class StreetMidiDispatch:
         channel = getattr(message, 'channel', 0)
         if not isinstance(channel, int) or not 0 <= channel <= 15:
             return result
+        if kind in ('note_on', 'note_off'):
+            note = getattr(message, 'note', None)
+            velocity = getattr(message, 'velocity', 0)
+            if type(note) is not int or not 0 <= note <= 127 or type(velocity) is not int or not 0 <= velocity <= 127:
+                return result
         if kind == 'control_change':
             cc = getattr(message, 'control', None)
             value = getattr(message, 'value', None)
@@ -62,7 +68,10 @@ class StreetMidiDispatch:
         result['changes'] = changes
         commands = self.router.translate(message)
         for action in commands:
-            self.command(action)
+            if self.pad_command is not None and kind=='note_on' and velocity>0 and action.startswith(('PAD ', 'BANK PAD ')):
+                self.pad_command(action,velocity/127.)
+            else:
+                self.command(action)
         result['commands'] = commands
         if kind in ('note_on', 'note_off'):
             note = getattr(message, 'note', None)

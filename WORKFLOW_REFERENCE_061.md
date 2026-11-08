@@ -28,3 +28,24 @@ An independent native-service/USB project, Encdr, documents a possible Studio di
 ## Own sound and FX state
 
 Arrange/Sound/Browse/FX are shared software contexts, rather than independent mock screens. The eight soft keys and encoders can be learned once as contextual SURFACE commands. Our eight stock sound starting points use the existing LABB engine. Four original master-bus processors are implemented, while NI expansion file loading, third-party plug-in hosting, and per-group/per-sound insert routing are not.
+
+## Current source checkpoint: Studio Loop page
+
+The Studio manual's dedicated Loop page (section 13.3.14.2, printed page 797) now has a TOOLBOXX counterpart. In STUDIO MAP, select LOOP from the context selector, or learn `SURFACE LOOP` to a MIDI control. Learn the eight soft keys and encoders to their contextual `SURFACE KEY n` and `SURFACE KNOB n +` commands once; switching context changes their functions.
+
+- Knob 1 moves the whole loop; knob 3 changes its start; knob 4 changes its length. Each turn uses a quarter-beat step and the arranger's undo history.
+- Soft button 4 selects the whole-song loop; button 5 toggles looping. Button 1 returns to Arrange. Buttons 6 and 7 undo and redo.
+- The on-screen Studio map shows current loop state and the active knob values in beats. This does not drive the physical screens.
+- New/default map navigation uses Browse → TOOLBOXX sound banks, Plug-in → our instrument editor, Mix → our FX rack, and Arrange → the arrangement context. Existing saved user mappings are preserved.
+
+The manual's physical SHIFT+RESTART hold gesture is not emulated by a guessed MIDI chord; use the explicit LOOP context command. Existing Arrange controls remain available. This source checkpoint is not in the published Build 061 installer.
+
+Product identity remains BOOM BAP TOOLBOXX with the current charcoal, rust, mint and worn-metal styling. Native Instruments and Maschine Studio identify controller compatibility and workflow references, not the product brand. Custom logo artwork is deferred until supplied by the owner.
+
+Validation: 156 automated tests passed, native startup smoke passed, and the actual Tk controller map rendered the LOOP page with the manual's knob positions.
+
+## Current source checkpoint: expressive sample pads
+
+Incoming MIDI note velocity now reaches the sample voice gain for learned absolute pads, learned bank-relative pads, legacy note mappings, and unmapped pad notes 36–67. Each overlapping voice retains its own gain across audio blocks. Mouse/step-sequencer triggers retain their full-strength default. Note-off and zero-velocity note-on events do not trigger learned pads; invalid note velocities are rejected before mapped command dispatch.
+
+This adds live sample-pad dynamics, not velocity recording into the existing boolean step matrix. Physical controller feel still requires a Studio test. Current validation: 162 tests pass, including bank-B pad 16 routed through the MIDI dispatcher into the real Engine, independent overlapping voice gains, soft-versus-loud audio renders, and native window startup. The published installer does not yet include this source checkpoint.

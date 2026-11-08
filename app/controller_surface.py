@@ -21,8 +21,8 @@ def controls():
     knob = [('LOOP POSITION','LOOP MOVE +'),('FOCUS LOOP','LOOP FOCUS'),('LOOP START','LOOP START +'),('LOOP LENGTH','LOOP END +'),
             ('JOG','HW JOG'),('SELECT','JOG CLICK'),('BACK','JOG BACK'),('PAGE','PAGE NEXT')]
     for i,(label,cmd) in enumerate(knob):add(f'KNOB {i+1}',str(i+1),.25+i*.069,.36,.04,.055,f'SURFACE KNOB {i+1} +',True)
-    left=[('CHANNEL','TRACK CITY','MODE TRK'),('PLUGIN','INSTRUMENT','LABB BROWSER'),('ARRANGE','ARRANGE','MODE ARR'),('MIX','MIX','PAGE NEXT'),
-          ('BROWSE','BROWSE','SUITE BROWSER'),('SAMPLING','SAMPLING','PAGE PREV'),('NAV LEFT','◀','PAGE PREV'),('NAV RIGHT','▶','PAGE NEXT'),
+    left=[('CHANNEL','TRACK CITY','MODE TRK'),('PLUGIN','INSTRUMENT','EDIT SOUND'),('ARRANGE','ARRANGE','SURFACE ARRANGE'),('MIX','MIX','EDIT FX'),
+          ('BROWSE','BROWSE','BROWSE SOUNDS'),('SAMPLING','SAMPLING','PAGE PREV'),('NAV LEFT','◀','PAGE PREV'),('NAV RIGHT','▶','PAGE NEXT'),
           ('ALL','ALL','LOOP ALL'),('AUTO','AUTO','LOOP FOCUS')]
     for i,(key,label,cmd) in enumerate(left):add(key,label,.065+(i%2)*.075,.09+(i//2)*.065,.061,.036,cmd)
     for i,(key,cmd) in enumerate([('TAP','JOG CLICK'),('STEP MODE','MODE MRQ'),('MACRO','SUITE BROWSER'),('NOTE REPEAT','RECORD')]):

@@ -15,6 +15,7 @@ from studio_midi_adapter import MidiControlRouter
 from street_midi_dispatch import StreetMidiDispatch
 from midi_automation_engine import MidiAutomationEngine
 from mix_rack import MixRack, MODULES
+from ui_shortcuts import dispatch_shortcut
 
 C={'bg':'#17151c','panel':'#28212d','cream':'#f3e5c9','mint':'#8ce3c9','orange':'#d7773d','burgundy':'#81374f','purple':'#7043ad','dim':'#a9a0ad'}
 PAGES=['TRACK CITY','CHOP LABB','PAD LABB','INSTRUMENT','MIXER','MIDI MAP']
@@ -37,25 +38,27 @@ class Engine:
   with self.lock:
    self.samples[index]=(mono,rate,Path(path).stem)
    self.sample_paths[index]=str(Path(path).expanduser().resolve())
- def trigger(self,index):
+ def trigger(self,index,velocity=1.0):
   if not 0 <= index < len(self.samples):raise ValueError("Pad index must be 0–31")
+  if type(velocity) not in (int,float) or not math.isfinite(velocity) or not 0<=velocity<=1:raise ValueError('Pad velocity must be between zero and one')
+  if velocity==0:return
   with self.lock:
    if self.samples[index]:
     if len(self.voices)>=64:self.voices.pop(0)
-    self.voices.append([index,0.0])
+    self.voices.append([index,0.0,float(velocity)])
  def render(self,frames):
   out=[0.0]*frames
   with self.lock:
    active=[]
-   for idx,pos in self.voices:
+   for idx,pos,velocity in self.voices:
     data,rate,_=self.samples[idx];step=rate/self.sr
     for j in range(frames):
      k=int(pos)
      if k>=len(data):break
      fraction=pos-k
      sample=data[k]*(1-fraction)+(data[k+1] if k+1<len(data) else data[k])*fraction
-     out[j]+=sample*.55;pos+=step
-    if pos<len(data):active.append([idx,pos])
+     out[j]+=sample*.55*velocity;pos+=step
+    if pos<len(data):active.append([idx,pos,velocity])
    self.voices=active
    regions=self.regions.render(frames)
    out=[a+b for a,b in zip(out,regions)]
@@ -108,7 +111,7 @@ class App:
   self.root=root;root.title('BOOM BAP TOOLBOXX | COOK UP v1.4');root.geometry('1250x830');root.configure(bg=C['bg'])
   self.suites=SuiteRouter();self.engine=Engine();self.labbs=self.engine.labbs;self.notes=NoteLane();self.note_pitch=48;self.page=0;self.bank=0;self.selected_pad=0;self.playing=False;self.recording=False;self.bpm=84;self.step=0;self.jog_mode=0;self.jog_modes=['PLAYHEAD','SCROLL','ZOOM','CLIP MOVE','CLIP LENGTH','SLICE','LOOP START','LOOP END','LOOP MOVE'];self.playhead=0;self.zoom=1;self.clips=[{'track':0,'start':0,'length':4,'name':'DRUM A'},{'track':1,'start':4,'length':4,'name':'CHOP B'},{'track':2,'start':0,'length':8,'name':'BASS A'}];self.selected_clip=0;self.arr=Arranger();self.range_editor=RangeEditor(self.arr);self.hardware_edit=HardwareEdit(self);self.surface_context=SurfaceContext(self);self.clips=self.arr.clips;self.drag=None;self.marquee_start=None
   self.pattern=[[False]*16 for _ in range(32)];self.patterns={'main':self.pattern};self.mapping={};self.hardware_midi=MidiControlRouter();self.midi_automation=MidiAutomationEngine();self.mix_rack=self.engine.mix_rack;self.learn=None;self.hardware_learn=None;self.last_hardware_learn=None;self.hardware_status='No MIDI input connected';self.midi_connected_name=None;self.midi_port=None;self.midi_thread=None;self.events=queue.Queue(maxsize=2048);self.midi_dropped=0;self.tick_id=None
-  self.street_dispatch=StreetMidiDispatch(self.hardware_midi,self.midi_automation,self.command,self._midi_note_on,self._midi_note_off,self.apply_midi_mix_changes)
+  self.street_dispatch=StreetMidiDispatch(self.hardware_midi,self.midi_automation,self.command,self._midi_note_on,self._midi_note_off,self.apply_midi_mix_changes,pad_command=self._midi_pad_command)
   self._style();self._layout();self._refresh();self.root.after(40,self._poll)
   root.protocol('WM_DELETE_WINDOW',self.close)
  def open_hardware_setup(self):
@@ -141,7 +144,9 @@ class App:
   self.right=tk.Frame(self.main,bg=C['bg'],width=420);self.right.pack(side='right',fill='y',padx=8,pady=6)
   self.label(self.left,'TRACK CITY  •  ARRANGER',size=13,bold=True).pack(anchor='w',padx=12,pady=8)
   self.arranger=tk.Canvas(self.left,height=235,bg='#1e1b24',highlightthickness=0);self.arranger.pack(fill='x',padx=10)
-  self.arranger.bind('<Button-1>',self.select_clip);self.arranger.bind('<B1-Motion>',self.drag_clip);self.arranger.bind('<ButtonRelease-1>',self.release_clip);self.arranger.bind('<Button-3>',self.right_click);self.root.bind('<Control-z>',lambda e:self.command('UNDO'));self.root.bind('<Control-y>',lambda e:self.command('REDO'));self.root.bind('<Control-c>',lambda e:self.command('COPY'));self.root.bind('<Control-v>',lambda e:self.command('PASTE'));self.root.bind('<Delete>',lambda e:self.delete_clip())
+  self.arranger.bind('<Button-1>',self.select_clip);self.arranger.bind('<B1-Motion>',self.drag_clip);self.arranger.bind('<ButtonRelease-1>',self.release_clip);self.arranger.bind('<Button-3>',self.right_click)
+  for key,cmd in [('<Control-z>','UNDO'),('<Control-y>','REDO'),('<Control-c>','COPY'),('<Control-v>','PASTE')]:self.root.bind(key,lambda e,c=cmd:dispatch_shortcut(e,lambda:self.command(c)))
+  self.root.bind('<Delete>',lambda e:dispatch_shortcut(e,self.delete_clip))
   transport=tk.Frame(self.left,bg=C['panel']);transport.pack(fill='x',pady=8)
   self.btn(transport,'▶ PLAY / STOP',self.toggle_play,'orange').pack(side='left',padx=5)
   self.btn(transport,'● REC',self.toggle_rec,'burgundy').pack(side='left',padx=5)
@@ -207,6 +212,8 @@ class App:
   self.btn(self.right,'STOP AUDIO',self.engine.stop).pack(fill='x',pady=5)
   self.status=self.label(self.right,'Ready. Virtual Studio works without hardware.','mint',9);self.status.pack(anchor='w',pady=6)
   self.scan_audio();self.scan_midi()
+ def show_workstation(self):
+  self.root.deiconify();self.root.lift()
  def open_cookup(self):
   from cookup_ui import CookUpWindow
   if hasattr(self,'cookup_window') and self.cookup_window.win.winfo_exists():self.cookup_window.win.lift();self.cookup_window.refresh()
@@ -253,14 +260,14 @@ class App:
   self.studio_window=StudioWindow(self)
  def set_page(self,i):self.page=i%len(PAGES);self._refresh()
  def set_bank(self,i):self.bank=i%2;self.selected_pad=self.bank*16+self.selected_pad%16;self._refresh()
- def pad(self,i):
+ def pad(self,i,velocity=1.0):
   if not 0 <= i < 16:raise ValueError('Visible pad index must be 0–15')
-  self.trigger_absolute_pad(self.bank*16+i)
- def trigger_absolute_pad(self,index):
+  self.trigger_absolute_pad(self.bank*16+i,velocity)
+ def trigger_absolute_pad(self,index,velocity=1.0):
   if not 0 <= index < 32:raise ValueError('Pad index must be 0–31')
   self.bank=index//16
   self.selected_pad=index
-  self.engine.trigger(index)
+  self.engine.trigger(index,velocity)
   self._refresh()
  def toggle_step(self,i):
   p=self.active_pattern()[self.selected_pad];p[i]=not p[i];self._refresh()
@@ -305,9 +312,9 @@ class App:
   elif m=='LOOP END':self.arr_loop('end',d*.25)
   elif m=='LOOP MOVE':self.arr_loop('body',d*.25)
   self._refresh()
- def command(self,name):
-  if name.startswith('BANK PAD '):self.pad(int(name[9:])-1)
-  elif name.startswith('PAD '):self.trigger_absolute_pad(int(name[4:])-1)
+ def command(self,name,velocity=1.0):
+  if name.startswith('BANK PAD '):self.pad(int(name[9:])-1,velocity)
+  elif name.startswith('PAD '):self.trigger_absolute_pad(int(name[4:])-1,velocity)
   elif name.startswith('SURFACE KEY '):self.surface_context.key(int(name.split()[-1])-1)
   elif name.startswith('SURFACE KNOB '):
    parts=name.split();self.surface_context.knob(int(parts[2])-1,1 if parts[3]=='+' else -1)
@@ -581,7 +588,9 @@ class App:
    if self.recording:
     focused=next((c for c in self.arr.clips if c['id'] in self.arr.selected and c.get('kind')=='labb'),None)
     if focused:self.notes.add(focused.get('note_pattern','labb-main'),(self.playhead-focused['start']+focused.get('offset',0))%4,note,velocity)
-  elif 36 <= note <= 67:self.trigger_absolute_pad(note-36)
+  elif 36 <= note <= 67:self.trigger_absolute_pad(note-36,velocity)
+ def _midi_pad_command(self,command,velocity):
+  self.command(command,velocity=velocity)
  def _midi_note_off(self,note):
   self.labbs.note_off(note,self.notes.armed_labb)
  def _poll(self):
@@ -596,7 +605,10 @@ class App:
      self.mapping[key]=self.learn;self.status.config(text=f'Learned {key} → {self.learn}');self.learn=None
      continue
     if key in self.mapping and m.type in ('note_on','control_change'):
-     if getattr(m,'velocity',getattr(m,'value',0))>0:self.command(self.mapping[key])
+     if getattr(m,'velocity',getattr(m,'value',0))>0:
+      action=self.mapping[key]
+      if m.type=='note_on' and action.startswith(('PAD ','BANK PAD ')):self._midi_pad_command(action,m.velocity/127.)
+      else:self.command(action)
      continue
     if m.type=='note_off' and f'note_on:{getattr(m,"channel",0)}:{number}' in self.mapping:continue
     self.street_dispatch.receive(self.midi_device.get() or 'unknown',m,position=self.playhead,playing=self.playing)
@@ -677,9 +689,16 @@ class App:
    self.status.config(text='Loaded project'+('; legacy file has no saved pad audio paths' if legacy else ' and audio sources'))
   except Exception as exc:messagebox.showerror('Project load',str(exc))
  def close(self):
+  if getattr(self,'_closing',False):return
+  self._closing=True
   self.playing=False
-  if self.tick_id:self.root.after_cancel(self.tick_id)
-  if self.midi_port:self.midi_port.close()
-  self.engine.stop();self.root.destroy()
+  if self.tick_id:
+   try:self.root.after_cancel(self.tick_id)
+   except tk.TclError:pass
+   self.tick_id=None
+  try:self.close_midi()
+  except Exception:pass
+  try:self.engine.stop()
+  finally:self.root.destroy()
 
 if __name__=='__main__':root=tk.Tk();App(root);root.mainloop()

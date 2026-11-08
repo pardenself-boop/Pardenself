@@ -70,4 +70,4 @@ class StreetFXTests(unittest.TestCase):
             engine.mix_rack.add('density').params['amount']=.8
             bounce_track_city(engine,arr,{'main':pattern},120,wet,bars=1)
             self.assertNotEqual(dry.read_bytes(),wet.read_bytes())
-        self.assertEqual(engine.voices,[[0,0.0]])
+        self.assertEqual(engine.voices,[[0,0.0,1.0]])

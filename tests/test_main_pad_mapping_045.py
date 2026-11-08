@@ -24,7 +24,7 @@ class MainPadMappingTests(unittest.TestCase):
   app=self.make_app();app.bank=1
   app.pad(15)
   self.assertEqual(app.selected_pad,31)
-  app.engine.trigger.assert_called_once_with(31)
+  app.engine.trigger.assert_called_once_with(31,1.0)
  def test_main_midi_notes_map_36_through_67(self):
   app=self.make_app();app.arr=SimpleNamespace(selected=set(),clips=[])
   for n in range(36,68):app._midi_note_on(n,.9)

@@ -147,6 +147,15 @@ class ControllerMapWindow:
         for x0,x1 in ((.235,.506),(.516,.796)):c.create_rectangle(x0*w,.135*h,x1*w,.323*h,fill='#0d1116',outline='#655765',width=2)
         left=.245*w;right=.525*w;top=.15*h;width=.25*w;height=.16*h
         context=app.surface_context
+        if context.page=='LOOP':
+            c.create_text(left,top,anchor='nw',text='TOOLBOXX / LOOP',fill=MINT,font=('Segoe UI',9,'bold'))
+            c.create_text(left,top+28,anchor='nw',text='LOOP '+('ON' if app.arr.loop_enabled else 'OFF')+' / '+app.arr.mode,fill=ORANGE,font=('Segoe UI',10,'bold'))
+            c.create_text(left,top+56,anchor='nw',text='POSITION / START / LENGTH\nValues in beats · quarter-beat steps',fill=CREAM,font=('Segoe UI',8))
+            c.create_text(right,top,anchor='nw',text='LOOP PARAMETERS / BEATS',fill=ORANGE,font=('Segoe UI',9,'bold'))
+            for index in (0,2,3):
+                label,value=context.values()[index]
+                c.create_text(right,top+26+(0,2,3).index(index)*24,anchor='nw',text=f'KNOB {index+1}  {label}  {value:g}',fill=CREAM,font=('Segoe UI',9))
+            self.draw_soft_labels(w,h);return
         if context.page!='ARRANGE':
             from labb_engine import LABBS
             from street_fx import NAMES

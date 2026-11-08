@@ -9,7 +9,11 @@ from toolboxx import App
 def main():
     root = tk.Tk()
     app = App(root)
-    root.after(150, app.open_cookup)
+    def open_workspace():
+        app.open_cookup()
+        root.withdraw()
+        app.cookup_window.win.protocol('WM_DELETE_WINDOW', app.close)
+    root.after(150, open_workspace)
     if '--dual' in sys.argv:
         root.after(550, app.open_labbs)
     root.mainloop()

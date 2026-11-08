@@ -5,16 +5,16 @@ import math, tkinter as tk
 from pathlib import Path
 from labb_engine import LABBS
 from feature_registry import FEATURES, AVAILABLE, read_visibility, write_visibility
+from ui_shortcuts import dispatch_shortcut
 BG='#100f10'; PANEL='#24201e'; PANEL2='#161516'; MINT='#82ceb5'; ORANGE='#e38b42'; BURG='#713a33'; CREAM='#e6d2b3'; PURPLE='#775c8c'; DIM='#ad9a84'
 COLORS=[ORANGE,MINT,PURPLE,BURG,MINT,ORANGE]
 ORB_NAMES=['HISTORY','SOUL','JAZZ','DEEP','DUST','SPACE','TAPE','VINYL']
 
 class CookUpWindow:
  def __init__(self,app):
-  self.app=app;self.win=tk.Toplevel(app.root);self.win.title('BOOM BAP TOOLBOXX | COOK UP MATRIX | BUILD 061');self.win.geometry('1500x900');self.win.minsize(1050,680);self.win.configure(bg=BG);self.win.after_idle(self._maximize)
+  self.app=app;self.win=tk.Toplevel(app.root);self.win.title('BOOM BAP TOOLBOXX | COOK UP MATRIX | BUILD 062');self.win.geometry('1500x900');self.win.minsize(1050,680);self.win.configure(bg=BG);self.win.after_idle(self._maximize)
   self.selected_orb=1;self.arr_view_start=0.0;self.arr_zoom=1.0;self.mouse_pan_anchor=None;self.loop_drag=None;self.range_drag=None;self.macro=app.labbs.orbs;self.matrix_page=0;self.current_suite=app.labbs.selected;self._build();self.refresh()
-  self.win.bind('<Escape>',lambda e:self.win.destroy());self.win.bind('<Control-z>',lambda e:self.act('UNDO'));
-  for key,cmd in [('<Control-c>','RANGE COPY'),('<Control-x>','RANGE CUT'),('<Control-v>','RANGE PASTE'),('<Control-d>','RANGE DUPLICATE'),('<Delete>','RANGE DELETE')]:self.win.bind(key,lambda e,c=cmd:self.act(c))
+  for key,cmd in [('<Control-z>','UNDO'),('<Control-y>','REDO'),('<Control-c>','RANGE COPY'),('<Control-x>','RANGE CUT'),('<Control-v>','RANGE PASTE'),('<Control-d>','RANGE DUPLICATE'),('<Delete>','RANGE DELETE')]:self.win.bind(key,lambda e,c=cmd:dispatch_shortcut(e,lambda:self.act(c)))
   self.win.after(200,self.poll)
  def _maximize(self):
   try:self.win.state('zoomed')
@@ -35,7 +35,7 @@ class CookUpWindow:
   for label,cmd in [('▶ PLAY/PAUSE','PLAY/STOP'),('● REC','RECORD')]:
    self.button(h,label,lambda c=cmd:self.act(c),ORANGE if label.startswith('▶') else PANEL2).pack(side='left',padx=3)
   self.tempo_label=self.txt(h,'',10,CREAM,True);self.tempo_label.pack(side='left',padx=7)
-  for t,f in [('SAVE',self.app.save),('LOAD',self.app.load),('SOUNDS',self.app.open_sound_browser),('STUDIO MAP',self.app.open_dual_screen),('MIX RACK',self.app.open_mix_rack),('MENU',self.open_feature_menu),('DAW',self.app.root.lift)]:self.button(h,t,f).pack(side='right',padx=3)
+  for t,f in [('SAVE',self.app.save),('LOAD',self.app.load),('SOUNDS',self.app.open_sound_browser),('STUDIO MAP',self.app.open_dual_screen),('MIX RACK',self.app.open_mix_rack),('MENU',self.open_feature_menu),('DAW',self.app.show_workstation)]:self.button(h,t,f).pack(side='right',padx=3)
   self.art=tk.Canvas(self.win,height=76,bg=BG,highlightthickness=0);self.art.pack(fill='x',padx=10,pady=(5,2));self.art.bind('<Configure>',self.draw_banner)
   mid=tk.Frame(self.win,bg=BG);mid.pack(fill='both',expand=True,padx=8,pady=3)
   self.main_columns=mid

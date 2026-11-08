@@ -20,6 +20,11 @@ DiskSpanning=no
 SetupLogging=yes
 PrivilegesRequired=lowest
 WizardStyle=modern
+DisableWelcomePage=yes
+DisableDirPage=yes
+DisableProgramGroupPage=yes
+DisableReadyMemo=yes
+DisableFinishedPage=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayName={#MyAppName}
@@ -29,8 +34,10 @@ Source: "..\build\BOOM_BAP_TOOLBOXX\*"; DestDir: "{app}"; Flags: recursesubdirs 
 [Icons]
 Name: "{group}\BOOM BAP TOOLBOXX"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\STREET SOUND CHECK (Audio + MIDI)"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--sound-check"
-Name: "{autodesktop}\BOOM BAP TOOLBOXX"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-[Tasks]
-Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: checkedonce
+Name: "{autodesktop}\BOOM BAP TOOLBOXX"; Filename: "{app}\{#MyAppExeName}"
+[Messages]
+ReadyLabel1=TOOLBOXX is ready to install.
+ReadyLabel2a=Click Install TOOLBOXX. Setup includes everything the app needs and will open it when finished.
+ButtonInstall=&Install TOOLBOXX
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Launch BOOM BAP TOOLBOXX"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch BOOM BAP TOOLBOXX"; Flags: nowait skipifsilent
