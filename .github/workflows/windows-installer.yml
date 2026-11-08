@@ -74,14 +74,14 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: TOOLBOXX-Windows-installer
-          path: installer
+          path: release-artifact
       - name: Publish single development installer after all Windows checks
         run: |
           python - <<'PY'
           from pathlib import Path
           import hashlib, json, os, subprocess
           release=json.loads(Path('release.json').read_text())
-          files=list(Path('installer').iterdir())
+          files=list(Path('release-artifact').iterdir())
           assert [p.name for p in files]==[release['installer']], 'Expected one Setup.exe'
           data=files[0].read_bytes()
           assert data[:2]==b'MZ'
