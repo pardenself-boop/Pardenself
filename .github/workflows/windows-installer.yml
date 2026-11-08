@@ -18,11 +18,11 @@ jobs:
           architecture: x64
       - name: Install Inno Setup
         shell: pwsh
-        run: choco install innosetup --version=6.4.3 -y --no-progress
+        run: choco install innosetup --version=6.4.3 --allow-downgrade -y --no-progress
       - name: Test, package, verify startup and compile installer
         shell: pwsh
         run: ./BUILD_SETUP_WINDOWS.ps1 -NoOpen
-      - name: Verify installed app without system Python
+      - name: Verify installation, startup and removal
         id: release
         shell: pwsh
         run: |
