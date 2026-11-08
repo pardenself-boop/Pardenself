@@ -1,0 +1,5 @@
+{
+  "bpm": 85, "bars": 2,
+  "samples": {"1": "app/AUDIO_TEST.wav"},
+  "hits": [{"pad": 1, "beat": 0}, {"pad": 1, "beat": 2}, {"pad": 1, "beat": 4}, {"pad": 1, "beat": 6}]
+}

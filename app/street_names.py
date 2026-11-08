@@ -1,0 +1,5 @@
+"""Display-only labels. Never rename serialized IDs, MIDI bindings, or DSP identifiers."""
+PROCESSOR_LABELS = {'eq': 'STREET CURVE EQ', 'compressor': 'PRESSURE BOX FX', 'density': 'HEAVYWEIGHT FX', 'transient': 'KNOCK SHOP FX', 'phase': 'PHASE PATROL FX', 'clipper': 'BRICKWALL CUT FX', 'gate': 'ALLEY GATE FX', 'exciter': 'GRIT ENGINE FX', 'sculptor': 'TONE CARVER FX', 'unmask': 'CLEAR THE BLOCK FX'}
+FEATURE_LABELS = {'Control Link': 'STREET LINK', 'MIDI Learn': 'KNOB JACK', 'Focus Mapping': 'LOCK-ON FOCUS', 'Global Mapping': 'CITYWIDE CONTROL', 'External Devices': 'HARDWARE BLOCK', 'Controller Map Editor': 'STREET MAP EDITOR', 'MIDI Monitor': 'MIDI WIRETAP', 'Controller Groups': 'CREW LINK', 'Mackie Control': 'IRON HANDSHAKE', 'Automation Editor': 'MOTION TRACKS', 'Touch Automation': 'FINGERPRINT MODE', 'Latch Automation': 'STAY LOCKED', 'Write Automation': 'INK MODE', 'Mix Assistant': 'BLOCK MIX BRAINZ', 'Signal Chain': 'IRON CHAIN FX', 'Visual Mixer': 'CITY MIX MAP', 'Sidechain Detection': 'DUCK & COVER', 'Reference Targets': 'CRATE REFERENCES'}
+def processor_label(kind):
+    return PROCESSOR_LABELS.get(kind, kind.replace("_", " ").title())

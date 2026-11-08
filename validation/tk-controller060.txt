@@ -1,0 +1,1 @@
+PASS: actual Tk Maschine setup, note learn, bank-aware MIDI pad dispatch, encoder learn, close cancellation; no callback errors

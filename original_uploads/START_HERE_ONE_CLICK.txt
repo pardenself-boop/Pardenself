@@ -1,0 +1,17 @@
+BOOM BAP TOOLBOXX - BUILD 029
+
+THIS ZIP IS A BUILDER KIT, NOT THE FINISHED WINDOWS SETUP.EXE.
+
+DEVELOPER (ONE TIME ON WINDOWS 11):
+1. Extract this ZIP completely to a folder.
+2. Double-click BUILD_SETUP_DOUBLE_CLICK.cmd.
+3. The builder installs its own build dependencies and packages the DAW.
+4. If successful, look in dist/ for BOOM_BAP_TOOLBOXX_Setup_029.exe.
+5. Install and test on a clean Windows 11 PC with Maschine Studio, Logitech Trackman Marble, and audio interface before sharing.
+
+CUSTOMERS (AFTER THE BUILD IS VERIFIED):
+Receive ONLY BOOM_BAP_TOOLBOXX_Setup_029.exe. Double-click and install. No GitHub, Python, or build scripts.
+
+NOTE: Unsigned software can show Windows SmartScreen warnings. Do not bypass security warnings without verifying the publisher and file integrity. Commercial release needs code signing, a clean-PC smoke test, license and third-party dependency review, and robust audio/MIDI QA.
+
+IF BUILD FAILS: Send BUILD_029_LOG.txt.

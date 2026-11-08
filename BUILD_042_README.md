@@ -1,0 +1,1 @@
+Build 042: STREET SOUND CHECK MIDI instrument selector, channel filtering, sustain CC64, channel-aware note tracking, and panic cleanup. Automated tests only; Windows MIDI/audio and installer remain unverified.

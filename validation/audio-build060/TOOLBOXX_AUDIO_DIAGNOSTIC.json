@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "sample_rate": 48000,
+  "channels": 2,
+  "wav_file": "TOOLBOXX_AUDIO_DIAGNOSTIC.wav",
+  "frames": 48000,
+  "peak": 0.08617,
+  "rms": 0.038923,
+  "clipped_frames": 0,
+  "note": "Offline engine test only. Does not prove Windows device playback or MIDI connectivity."
+}

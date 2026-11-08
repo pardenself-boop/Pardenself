@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+.builder-venv/
+build/
+dist/
+work/
+*.spec
+BUILD_*_LOG.txt
+BUILD_DEPENDENCIES.txt
+.test-venv/

@@ -1,0 +1,1 @@
+Build 055: Track City offline WAV bounce now includes audible audio-region clips alongside pad patterns. Respects mute/solo, trim, gain, fade and slip via existing audio_regions engine. Live Windows audio/MIDI and installer are still unverified.

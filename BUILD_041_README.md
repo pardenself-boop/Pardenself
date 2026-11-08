@@ -1,0 +1,1 @@
+BUILD 041 — Combined STREET SOUND CHECK + MIDI IN. Launch TEST_AUDIO_DOUBLE_CLICK.cmd. Choose audio output, START AUDIO, SCAN and CONNECT a MIDI input, then play MIDI notes to hear BASS LABB. Includes MIDI overflow panic and disconnect cleanup. Requires Python, sounddevice, mido, python-rtmidi on the developer machine. No Windows installer or hardware validation claimed.

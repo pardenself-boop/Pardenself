@@ -1,0 +1,2 @@
+BOOM BAP TOOLBOXX BUILD 048
+Extract ZIP on Windows 11. Double-click BUILD_SETUP_DOUBLE_CLICK.cmd. This builds a Setup.exe; the ZIP is not an installer. See BUILD_048_README.md.

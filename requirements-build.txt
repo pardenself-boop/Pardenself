@@ -1,0 +1,8 @@
+# Tested by the Windows CI pipeline; update deliberately.
+pyinstaller==6.14.2
+sounddevice==0.5.2
+mido==1.3.3
+python-rtmidi==1.5.8
+Pillow==11.2.1
+soundcard==0.4.3
+numpy==2.2.6

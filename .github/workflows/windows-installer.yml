@@ -1,0 +1,60 @@
+name: Build TOOLBOXX Windows Installer
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --version=6.4.3 -y --no-progress
+      - name: Test, package, verify startup and compile installer
+        shell: pwsh
+        run: ./BUILD_SETUP_WINDOWS.ps1 -NoOpen
+      - name: Verify installed app without system Python
+        id: release
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $release = Get-Content release.json -Raw | ConvertFrom-Json
+          $installer = Join-Path $PWD ('dist/' + $release.installer)
+          $installDir = Join-Path $env:RUNNER_TEMP 'TOOLBOXX-install-check'
+          $installLog = Join-Path $PWD 'BUILD_INSTALL_LOG.txt'
+          $installArgs = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', ('/DIR="' + $installDir + '"'), ('/LOG="' + $installLog + '"'))
+          $setup = Start-Process -FilePath $installer -ArgumentList $installArgs -Wait -PassThru
+          if ($setup.ExitCode -ne 0) { throw "Installer failed: $($setup.ExitCode)" }
+          $installedExe = Join-Path $installDir ($release.executable + '.exe')
+          if (!(Test-Path $installedExe)) { throw 'Installed executable missing' }
+          $smoke = Start-Process -FilePath $installedExe -ArgumentList '--smoke-test' -PassThru
+          if (!$smoke.WaitForExit(60000)) { $smoke.Kill(); throw 'Installed app startup timed out' }
+          if ($smoke.ExitCode -ne 0) { throw 'Installed app startup failed' }
+          $uninstaller = Join-Path $installDir 'unins000.exe'
+          $uninstall = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) { throw 'Uninstall check failed' }
+          "installer=dist/$($release.installer)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      - name: Upload single installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: TOOLBOXX-Windows-installer
+          path: ${{ steps.release.outputs.installer }}
+          if-no-files-found: error
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TOOLBOXX-build-diagnostics
+          path: |
+            BUILD_*_LOG.txt
+            BUILD_DEPENDENCIES.txt
+          if-no-files-found: warn
