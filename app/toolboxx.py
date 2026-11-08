@@ -4,6 +4,7 @@ from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
 from array import array
 from arranger_core import Arranger
+from arranger_ranges import RangeEditor
 from arrangement_playback import hits_at, advance
 from audio_regions import AudioRegions, regions_starting
 from suite_registry import SUITES, SuiteRouter
@@ -16,7 +17,7 @@ from mix_rack import MixRack, MODULES
 
 C={'bg':'#17151c','panel':'#28212d','cream':'#f3e5c9','mint':'#8ce3c9','orange':'#d7773d','burgundy':'#81374f','purple':'#7043ad','dim':'#a9a0ad'}
 PAGES=['TRACK CITY','CHOP LABB','PAD LABB','INSTRUMENT','MIXER','MIDI MAP']
-COMMANDS=['PLAY/STOP','RECORD','PAGE NEXT','PAGE PREV','BANK NEXT','BANK PREV','JOG +','JOG -','JOG MODE','UNDO','REDO','MODE MRQ','MODE TRK','MODE ARR','LOOP START -','LOOP START +','LOOP END -','LOOP END +','LOOP MOVE -','LOOP MOVE +','COPY','PASTE','PASTE MERGE','SPLIT','JOG CLICK','JOG BACK','JOG SHIFT','HW JOG +','HW JOG -','SUITE NEXT','SUITE PREV','SUITE CLICK','SUITE BROWSER','TRACK MUTE','TRACK SOLO','LABB NEXT','LABB PREV','LABB PLAY','LABB BROWSER','LABB ARM','LABB NOTE +','LABB NOTE -','LABB NOTE PLAY','LABB CLIP']+[f'EDIT:{op}' for op in ('SELECT','MOVE','TRACK MOVE','TRIM LEFT','TRIM RIGHT','SLIP','MARQUEE','LOOP START','LOOP END','LOOP MOVE')]+[f'PAD {i+1}' for i in range(32)]+[f'BANK PAD {i+1}' for i in range(16)]
+COMMANDS=['PLAY/STOP','RECORD','PAGE NEXT','PAGE PREV','BANK NEXT','BANK PREV','JOG +','JOG -','JOG MODE','UNDO','REDO','MODE MRQ','MODE TRK','MODE ARR','LOOP START -','LOOP START +','LOOP END -','LOOP END +','LOOP MOVE -','LOOP MOVE +','COPY','PASTE','PASTE MERGE','SPLIT','JOG CLICK','JOG BACK','JOG SHIFT','HW JOG +','HW JOG -','SUITE NEXT','SUITE PREV','SUITE CLICK','SUITE BROWSER','TRACK MUTE','TRACK SOLO','LABB NEXT','LABB PREV','LABB PLAY','LABB BROWSER','LABB ARM','LABB NOTE +','LABB NOTE -','LABB NOTE PLAY','LABB CLIP']+[f'EDIT:{op}' for op in ('SELECT','MOVE','TRACK MOVE','TRIM LEFT','TRIM RIGHT','SLIP','MARQUEE','LOOP START','LOOP END','LOOP MOVE')]+[f'PAD {i+1}' for i in range(32)]+[f'BANK PAD {i+1}' for i in range(16)]+['RANGE COPY','RANGE CUT','RANGE PASTE','RANGE DELETE','RANGE DUPLICATE','RANGE INSERT','LOOP TOGGLE','LOOP ALL','LOOP FOCUS','RESTART']
 
 class Engine:
  def __init__(self):
@@ -103,7 +104,7 @@ from hardware_edit import HardwareEdit
 class App:
  def __init__(self,root):
   self.root=root;root.title('BOOM BAP TOOLBOXX | COOK UP v1.4');root.geometry('1250x830');root.configure(bg=C['bg'])
-  self.suites=SuiteRouter();self.engine=Engine();self.labbs=self.engine.labbs;self.notes=NoteLane();self.note_pitch=48;self.page=0;self.bank=0;self.selected_pad=0;self.playing=False;self.recording=False;self.bpm=84;self.step=0;self.jog_mode=0;self.jog_modes=['PLAYHEAD','SCROLL','ZOOM','CLIP MOVE','CLIP LENGTH','SLICE','LOOP START','LOOP END','LOOP MOVE'];self.playhead=0;self.zoom=1;self.clips=[{'track':0,'start':0,'length':4,'name':'DRUM A'},{'track':1,'start':4,'length':4,'name':'CHOP B'},{'track':2,'start':0,'length':8,'name':'BASS A'}];self.selected_clip=0;self.arr=Arranger();self.hardware_edit=HardwareEdit(self);self.clips=self.arr.clips;self.drag=None;self.marquee_start=None
+  self.suites=SuiteRouter();self.engine=Engine();self.labbs=self.engine.labbs;self.notes=NoteLane();self.note_pitch=48;self.page=0;self.bank=0;self.selected_pad=0;self.playing=False;self.recording=False;self.bpm=84;self.step=0;self.jog_mode=0;self.jog_modes=['PLAYHEAD','SCROLL','ZOOM','CLIP MOVE','CLIP LENGTH','SLICE','LOOP START','LOOP END','LOOP MOVE'];self.playhead=0;self.zoom=1;self.clips=[{'track':0,'start':0,'length':4,'name':'DRUM A'},{'track':1,'start':4,'length':4,'name':'CHOP B'},{'track':2,'start':0,'length':8,'name':'BASS A'}];self.selected_clip=0;self.arr=Arranger();self.range_editor=RangeEditor(self.arr);self.hardware_edit=HardwareEdit(self);self.clips=self.arr.clips;self.drag=None;self.marquee_start=None
   self.pattern=[[False]*16 for _ in range(32)];self.patterns={'main':self.pattern};self.mapping={};self.hardware_midi=MidiControlRouter();self.midi_automation=MidiAutomationEngine();self.mix_rack=MixRack();self.learn=None;self.hardware_learn=None;self.last_hardware_learn=None;self.hardware_status='No MIDI input connected';self.midi_connected_name=None;self.midi_port=None;self.midi_thread=None;self.events=queue.Queue(maxsize=2048);self.midi_dropped=0;self.tick_id=None
   self.street_dispatch=StreetMidiDispatch(self.hardware_midi,self.midi_automation,self.command,self._midi_note_on,self._midi_note_off,self.apply_midi_mix_changes)
   self._style();self._layout();self._refresh();self.root.after(40,self._poll)
@@ -208,6 +209,10 @@ class App:
   from cookup_ui import CookUpWindow
   if hasattr(self,'cookup_window') and self.cookup_window.win.winfo_exists():self.cookup_window.win.lift();self.cookup_window.refresh()
   else:self.cookup_window=CookUpWindow(self)
+ def open_dual_screen(self):
+  from controller_map_window import ControllerMapWindow
+  if hasattr(self,'controller_map_window') and self.controller_map_window.win.winfo_exists():self.controller_map_window.win.lift()
+  else:self.controller_map_window=ControllerMapWindow(self)
  def open_mix_rack(self):
   from mix_rack_window import MixRackWindow
   if hasattr(self,'mix_rack_window') and self.mix_rack_window.win.winfo_exists():self.mix_rack_window.win.lift()
@@ -291,6 +296,12 @@ class App:
  def command(self,name):
   if name.startswith('BANK PAD '):self.pad(int(name[9:])-1)
   elif name.startswith('PAD '):self.trigger_absolute_pad(int(name[4:])-1)
+  elif name.startswith('RANGE '):self.range_command(name[6:])
+  elif name=='RESTART':self.playhead=0.;self.step=0;self._refresh()
+  elif name=='LOOP TOGGLE':self.arr.loop_enabled=not self.arr.loop_enabled;self._refresh()
+  elif name=='LOOP ALL':
+   self.arr.checkpoint();self.arr.loop_start=0.;self.arr.loop_end=max(.25,max((c['start']+c['length'] for c in self.arr.clips),default=16.));self._refresh()
+  elif name=='LOOP FOCUS':self.hardware_edit.set_operation('LOOP MOVE');self.status.config(text=self.hardware_edit.describe());self._refresh()
   elif name=='PLAY/STOP':self.toggle_play()
   elif name=='RECORD':self.toggle_rec()
   elif name=='TRACK MUTE':self.arr.toggle_track_mute(self.arr.focus_track);self._refresh()
@@ -333,6 +344,16 @@ class App:
   elif name=='SPLIT':self.split()
   elif name.startswith('LOOP '):
    _,edge,sign=name.split();self.arr_loop({'START':'start','END':'end','MOVE':'body'}[edge],-.25 if sign=='-' else .25)
+ def range_command(self,operation):
+  editor=self.range_editor
+  if operation=='COPY':result=editor.copy()
+  elif operation=='CUT':result=editor.delete(cut=True)
+  elif operation=='DELETE':result=editor.delete()
+  elif operation=='PASTE':result=editor.paste(self.playhead)
+  elif operation=='DUPLICATE':result=editor.duplicate()
+  elif operation=='INSERT':result=editor.duplicate(insert=True)
+  else:raise ValueError('Unknown range operation')
+  self.clips=self.arr.clips;self._refresh();self.status.config(text=f'{self.arr.mode} RANGE {operation}: '+str(len(result) if isinstance(result,list) else result)+' region(s)')
  def _suite_update(self):
   self.status.config(text='SUITE '+str(self.suites.focus+1)+'/22: '+self.suites.current.name+' ['+self.suites.current.implementation+']')
   if hasattr(self,'suite_window') and self.suite_window.win.winfo_exists():self.suite_window.refresh()
@@ -471,11 +492,17 @@ class App:
   except Exception as exc:
    self.midi_port=None;self.hardware_status='MIDI connection failed: '+str(exc);self.status.config(text=self.hardware_status)
    messagebox.showerror('MIDI',self.hardware_status);return False
- def arm_hardware_learn(self,command,mode):
+ def arm_hardware_learn(self,command,mode,control=None):
   # Validate mode before arming; addresses come from the real incoming message.
   MidiControlRouter().bind('cc',0,0,command,mode)
   self.learn=None;self.last_hardware_learn=None;self.hardware_learn={'command':command,'mode':mode}
+  if control is not None:self.hardware_learn['control']=control
   self.hardware_status='LEARN ARMED: '+command;self.status.config(text=self.hardware_status)
+ def arm_pad_learn(self):
+  staged=MidiControlRouter();staged.deserialize(self.hardware_midi.serialize())
+  self.learn=None;self.last_hardware_learn=None
+  self.hardware_learn={'command':'BANK PAD 1','mode':'button','control':'PAD 1','batch':True,'index':0,'staged':staged,'seen':set(),'legacy':[]}
+  self.hardware_status='PAD LEARN 1/16 — press physical pad 1 (existing map is preserved until complete)';self.status.config(text=self.hardware_status)
  def _learn_hardware_message(self,message):
   pending=getattr(self,'hardware_learn',None)
   if not pending:return False
@@ -488,7 +515,22 @@ class App:
   if pending['mode']!='button' and typ!='control_change':return False
   kind='cc' if typ=='control_change' else 'note';number=getattr(message,'control',None) if kind=='cc' else getattr(message,'note',None)
   channel=getattr(message,'channel',None)
-  self.hardware_midi.bind(kind,channel,number,pending['command'],pending['mode'])
+  if pending.get('batch'):
+   address=f'{kind}:{channel}:{number}'
+   if address in pending['seen']:
+    self.hardware_status=f"Already captured {address} — press physical pad {pending['index']+1}";self.status.config(text=self.hardware_status);return True
+   pending['staged'].bind(kind,channel,number,pending['command'],pending['mode'],pending['control'])
+   pending['seen'].add(address);pending['legacy'].append(f'{typ}:{channel}:{number}');pending['index']+=1
+   if pending['index']==16:
+    self.hardware_midi.deserialize(pending['staged'].serialize())
+    for key in pending['legacy']:self.mapping.pop(key,None)
+    self.hardware_learn=None;self.last_hardware_learn={'kind':kind,'channel':channel,'number':number,'command':'BANK PAD 16','mode':'button','control':'PAD 16'}
+    self.hardware_status='PAD LEARN COMPLETE — all 16 physical pads mapped across banks A/B'
+   else:
+    n=pending['index']+1;pending['command']=f'BANK PAD {n}';pending['control']=f'PAD {n}'
+    self.hardware_status=f'PAD LEARN {n}/16 — press physical pad {n}'
+   self.status.config(text=self.hardware_status);return True
+  self.hardware_midi.bind(kind,channel,number,pending['command'],pending['mode'],pending.get('control'))
   # A newly learned address supersedes legacy learn at that address.
   self.mapping.pop(f'{typ}:{channel}:{number}',None)
   self.last_hardware_learn={'kind':kind,'channel':channel,'number':number,**pending}

@@ -30,8 +30,10 @@ def region_sample(data, source_rate, output_rate, clip, elapsed_frames, bpm):
     fade_in = max(0.0, float(clip.get('fade_in', 0.0)))
     fade_out = max(0.0, float(clip.get('fade_out', 0.0)))
     envelope = 1.0
-    if fade_in: envelope = min(envelope, local_beat / fade_in)
-    if fade_out: envelope = min(envelope, (duration - local_beat) / fade_out)
+    envelope_beat = local_beat + float(clip.get('envelope_offset', 0.0))
+    envelope_length = float(clip.get('envelope_length', duration))
+    if fade_in: envelope = min(envelope, envelope_beat / fade_in)
+    if fade_out: envelope = min(envelope, (envelope_length - envelope_beat) / fade_out)
     return value * max(0.0, envelope) * float(clip.get('gain', 1.0))
 
 

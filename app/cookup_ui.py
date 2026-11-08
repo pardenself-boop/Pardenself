@@ -5,35 +5,37 @@ import math, tkinter as tk
 from pathlib import Path
 from labb_engine import LABBS
 from feature_registry import FEATURES, AVAILABLE, read_visibility, write_visibility
-BG='#100d14'; PANEL='#211721'; PANEL2='#17121d'; MINT='#8ce3c9'; ORANGE='#ed8237'; BURG='#81374f'; CREAM='#f3e5c9'; PURPLE='#a061df'; DIM='#9c91a1'
+BG='#100f10'; PANEL='#24201e'; PANEL2='#161516'; MINT='#82ceb5'; ORANGE='#e38b42'; BURG='#713a33'; CREAM='#e6d2b3'; PURPLE='#775c8c'; DIM='#ad9a84'
 COLORS=[ORANGE,MINT,PURPLE,BURG,MINT,ORANGE]
 ORB_NAMES=['HISTORY','SOUL','JAZZ','DEEP','DUST','SPACE','TAPE','VINYL']
 
 class CookUpWindow:
  def __init__(self,app):
-  self.app=app;self.win=tk.Toplevel(app.root);self.win.title('BOOM BAP TOOLBOXX | COOK UP MATRIX | BUILD 060');self.win.geometry('1500x900');self.win.minsize(1050,680);self.win.configure(bg=BG);self.win.after_idle(self._maximize)
-  self.selected_orb=1;self.arr_view_start=0.0;self.arr_zoom=1.0;self.mouse_pan_anchor=None;self.loop_drag=None;self.macro=app.labbs.orbs;self.matrix_page=0;self.current_suite=app.labbs.selected;self._build();self.refresh()
-  self.win.bind('<Escape>',lambda e:self.win.destroy());self.win.bind('<Control-z>',lambda e:self.act('UNDO'));self.win.after(200,self.poll)
+  self.app=app;self.win=tk.Toplevel(app.root);self.win.title('BOOM BAP TOOLBOXX | COOK UP MATRIX | BUILD 061');self.win.geometry('1500x900');self.win.minsize(1050,680);self.win.configure(bg=BG);self.win.after_idle(self._maximize)
+  self.selected_orb=1;self.arr_view_start=0.0;self.arr_zoom=1.0;self.mouse_pan_anchor=None;self.loop_drag=None;self.range_drag=None;self.macro=app.labbs.orbs;self.matrix_page=0;self.current_suite=app.labbs.selected;self._build();self.refresh()
+  self.win.bind('<Escape>',lambda e:self.win.destroy());self.win.bind('<Control-z>',lambda e:self.act('UNDO'));
+  for key,cmd in [('<Control-c>','RANGE COPY'),('<Control-x>','RANGE CUT'),('<Control-v>','RANGE PASTE'),('<Control-d>','RANGE DUPLICATE'),('<Delete>','RANGE DELETE')]:self.win.bind(key,lambda e,c=cmd:self.act(c))
+  self.win.after(200,self.poll)
  def _maximize(self):
   try:self.win.state('zoomed')
   except tk.TclError:
    try:self.win.attributes('-zoomed',True)
    except tk.TclError:pass
  def txt(self,p,s,size=10,color=CREAM,bold=False):return tk.Label(p,text=s,bg=p.cget('bg'),fg=color,font=('Segoe UI',size,'bold' if bold else 'normal'))
- def button(self,p,s,fn,color=PANEL):return tk.Button(p,text=s,command=fn,bg=color,fg=CREAM,activebackground=ORANGE,activeforeground=BG,relief='flat',font=('Segoe UI',9,'bold'),padx=9,pady=5,cursor='hand2',bd=0)
+ def button(self,p,s,fn,color=PANEL):return tk.Button(p,text=s,command=fn,bg=color,fg=CREAM,activebackground=ORANGE,activeforeground=BG,relief='ridge',font=('Segoe UI',9,'bold'),padx=9,pady=5,cursor='hand2',bd=1,highlightthickness=0)
  def section(self,p,label,color=MINT):
   f=tk.Frame(p,bg=PANEL);f.pack(fill='x',pady=(7,3));self.txt(f,'◆ '+label,10,color,True).pack(anchor='w',padx=10,pady=5);return f
  def grid_section(self,p,row,label,color=MINT):
   f=tk.Frame(p,bg=PANEL);f.grid(row=row,column=0,sticky='ew',pady=(3,1));self.txt(f,'◆ '+label,10,color,True).pack(anchor='w',padx=10,pady=3)
  def _build(self):
   h=tk.Frame(self.win,bg='#261720',height=65);h.pack(fill='x');h.pack_propagate(False)
-  self.txt(h,'◈  BOOM BAP TOOLBOXX',22,CREAM,True).pack(side='left',padx=14,pady=9)
-  self.txt(h,'SOUND LABB DIVISION  /  COOK UP MATRIX',10,MINT,True).pack(side='left',padx=9)
+  self.txt(h,'◈  BOOM BAP TOOLBOXX',19,CREAM,True).pack(side='left',padx=14,pady=9)
+  self.txt(h,'SOUND LABB DIVISION  /  COOK UP MATRIX',9,MINT,True).pack(side='left',padx=9)
   # Persistent transport remains visible when browsing instruments.
   for label,cmd in [('▶ PLAY/PAUSE','PLAY/STOP'),('● REC','RECORD')]:
    self.button(h,label,lambda c=cmd:self.act(c),ORANGE if label.startswith('▶') else PANEL2).pack(side='left',padx=3)
   self.tempo_label=self.txt(h,'',10,CREAM,True);self.tempo_label.pack(side='left',padx=7)
-  for t,f in [('SAVE',self.app.save),('LOAD',self.app.load),('STUDIO',self.app.open_studio),('SCREEN 2',self.app.open_labbs),('MIX RACK',self.app.open_mix_rack),('MENU',self.open_feature_menu),('DAW',self.app.root.lift)]:self.button(h,t,f).pack(side='right',padx=3)
+  for t,f in [('SAVE',self.app.save),('LOAD',self.app.load),('STUDIO',self.app.open_studio),('STUDIO MAP',self.app.open_dual_screen),('MIX RACK',self.app.open_mix_rack),('MENU',self.open_feature_menu),('DAW',self.app.root.lift)]:self.button(h,t,f).pack(side='right',padx=3)
   self.art=tk.Canvas(self.win,height=76,bg=BG,highlightthickness=0);self.art.pack(fill='x',padx=10,pady=(5,2));self.art.bind('<Configure>',self.draw_banner)
   mid=tk.Frame(self.win,bg=BG);mid.pack(fill='both',expand=True,padx=8,pady=3)
   self.main_columns=mid
@@ -50,10 +52,10 @@ class CookUpWindow:
   self.labb_title=self.txt(inst,'KEY 88 LABB',19,CREAM,True);self.labb_title.pack(side='left',padx=12,pady=9)
   self.txt(inst,'ENGINE  •  WAVE  •  MIDI  •  FX  •  MOD',9,ORANGE,True).pack(side='right',padx=10)
   self.instrument_header=inst
-  self.orbs=tk.Canvas(center,height=108,bg=PANEL,highlightthickness=0);self.orbs.grid(row=1,column=0,sticky='ew',pady=(3,2));self.orbs.bind('<Configure>',lambda e:self.draw_orbs());self.orbs.bind('<Button-1>',self.orb_click);self.orbs.bind('<MouseWheel>',self.orb_scroll)
+  self.orbs=tk.Canvas(center,height=86,bg=PANEL,highlightthickness=0);self.orbs.grid(row=1,column=0,sticky='ew',pady=(3,2));self.orbs.bind('<Configure>',lambda e:self.draw_orbs());self.orbs.bind('<Button-1>',self.orb_click);self.orbs.bind('<MouseWheel>',self.orb_scroll)
   wavebox=tk.Frame(center,bg=PANEL);wavebox.grid(row=2,column=0,sticky='ew',pady=2)
-  self.pad_deck=tk.Canvas(wavebox,width=184,height=130,bg=PANEL2,highlightthickness=0,cursor='hand2');self.pad_deck.pack(side='left',fill='y',padx=5,pady=5);self.pad_deck.bind('<Configure>',lambda e:self.draw_pad_deck());self.pad_deck.bind('<Button-1>',self.pad_click);self.pad_deck.bind('<Double-Button-1>',self.pad_load)
-  self.wave=tk.Canvas(wavebox,height=130,bg=PANEL2,highlightthickness=0);self.wave.pack(side='left',fill='both',expand=True,padx=5,pady=5);self.wave.bind('<Configure>',lambda e:self.draw_wave())
+  self.pad_deck=tk.Canvas(wavebox,width=184,height=110,bg=PANEL2,highlightthickness=0,cursor='hand2');self.pad_deck.pack(side='left',fill='y',padx=5,pady=5);self.pad_deck.bind('<Configure>',lambda e:self.draw_pad_deck());self.pad_deck.bind('<Button-1>',self.pad_click);self.pad_deck.bind('<Double-Button-1>',self.pad_load)
+  self.wave=tk.Canvas(wavebox,height=110,bg=PANEL2,highlightthickness=0);self.wave.pack(side='left',fill='both',expand=True,padx=5,pady=5);self.wave.bind('<Configure>',lambda e:self.draw_wave())
   self.wave_panel=wavebox
   params=tk.Frame(wavebox,bg=PANEL,width=205);params.pack(side='right',fill='y');params.pack_propagate(False)
   self.txt(params,'LABB PERFORMANCE',10,ORANGE,True).pack(pady=(7,4))
@@ -62,13 +64,17 @@ class CookUpWindow:
   for t,f in [('LOAD WAV',self.load_wav),('MASCHINE SETUP',self.app.open_hardware_setup),('BANK A',lambda:self.bank(0)),('BANK B',lambda:self.bank(1)),('JOG ◀',lambda:self.act('HW JOG -')),('JOG CLICK',lambda:self.act('JOG CLICK')),('JOG ▶',lambda:self.act('HW JOG +'))]:self.button(ctl,t,f,BURG if t=='JOG CLICK' else PANEL).pack(side='left',padx=3,pady=4)
   self.pad_header_holder=center
   self.grid_section(center,4,'STEP MATRIX  /  SELECT A PAD TO EDIT ITS GROUP')
-  self.matrix=tk.Canvas(center,height=140,bg=PANEL,highlightthickness=0);self.matrix.grid(row=5,column=0,sticky='nsew');self.matrix.bind('<Configure>',lambda e:self.draw_matrix());self.matrix.bind('<Button-1>',self.matrix_click)
+  self.matrix=tk.Canvas(center,height=104,bg=PANEL,highlightthickness=0);self.matrix.grid(row=5,column=0,sticky='nsew');self.matrix.bind('<Configure>',lambda e:self.draw_matrix());self.matrix.bind('<Button-1>',self.matrix_click)
   self.grid_section(center,6,'TRACK CITY  /  MRQ · TRK · ARR',ORANGE)
   self.track_city_stack=tk.Frame(center,bg=PANEL2);self.track_city_stack.grid(row=7,column=0,sticky='nsew');self.track_city_stack.grid_columnconfigure(0,weight=1);self.track_city_stack.grid_rowconfigure(1,weight=1)
-  self.loop_bar=tk.Canvas(self.track_city_stack,height=34,bg='#251824',highlightthickness=0,cursor='hand2');self.loop_bar.grid(row=0,column=0,sticky='ew');self.loop_bar.bind('<Configure>',lambda e:self.draw_loop_bar());self.loop_bar.bind('<ButtonPress-1>',self.loop_press);self.loop_bar.bind('<B1-Motion>',self.loop_move);self.loop_bar.bind('<ButtonRelease-1>',self.loop_release)
-  self.arrange=tk.Canvas(self.track_city_stack,height=190,bg=PANEL2,highlightthickness=0);self.arrange.grid(row=1,column=0,sticky='nsew');self.arrange.bind('<Configure>',lambda e:self.draw_arrange());self.arrange.bind('<Button-1>',self.arr_click);self.arrange.bind('<ButtonPress-2>',self.mouse_pan_start);self.arrange.bind('<B2-Motion>',self.mouse_pan_move);self.arrange.bind('<ButtonRelease-2>',self.mouse_pan_end);self.arrange.bind('<MouseWheel>',self.mouse_wheel);self.arrange.bind('<Button-4>',lambda e:self.mouse_wheel_steps(e,1));self.arrange.bind('<Button-5>',lambda e:self.mouse_wheel_steps(e,-1))
+  self.loop_bar=tk.Canvas(self.track_city_stack,height=34,bg='#251824',highlightthickness=0,cursor='hand2');self.loop_bar.grid(row=0,column=0,sticky='ew');self.loop_bar.bind('<Configure>',lambda e:self.draw_loop_bar());self.loop_bar.bind('<ButtonPress-1>',self.loop_press);self.loop_bar.bind('<B1-Motion>',self.loop_move);self.loop_bar.bind('<ButtonRelease-1>',self.loop_release);self.loop_bar.bind('<Motion>',self.loop_hover);self.loop_bar.bind('<Double-Button-1>',self.loop_tools);self.loop_bar.bind('<Button-3>',self.loop_tools)
+  self.arrange=tk.Canvas(self.track_city_stack,height=190,bg=PANEL2,highlightthickness=0);self.arrange.grid(row=1,column=0,sticky='nsew');self.arrange.bind('<Configure>',lambda e:self.draw_arrange());self.arrange.bind('<ButtonPress-1>',self.arr_press);self.arrange.bind('<B1-Motion>',self.arr_move);self.arrange.bind('<ButtonRelease-1>',self.arr_release);self.arrange.bind('<ButtonPress-2>',self.mouse_pan_start);self.arrange.bind('<B2-Motion>',self.mouse_pan_move);self.arrange.bind('<ButtonRelease-2>',self.mouse_pan_end);self.arrange.bind('<MouseWheel>',self.mouse_wheel);self.arrange.bind('<Button-4>',lambda e:self.mouse_wheel_steps(e,1));self.arrange.bind('<Button-5>',lambda e:self.mouse_wheel_steps(e,-1))
   transport=tk.Frame(center,bg=PANEL);transport.grid(row=8,column=0,sticky='ew',pady=2)
-  for t,c in [('▶ PLAY/STOP','PLAY/STOP'),('MRQ','MODE MRQ'),('TRK','MODE TRK'),('ARR','MODE ARR'),('SPLIT','SPLIT'),('COPY','COPY'),('MERGE','PASTE MERGE'),('UNDO','UNDO'),('REDO','REDO')]:self.button(transport,t,lambda c=c:self.act(c),ORANGE if 'PLAY' in t else PANEL).pack(side='left',padx=2,pady=4)
+  self.mode_buttons={}
+  for t,c in [('▶ PLAY/STOP','PLAY/STOP'),('MRQ','MODE MRQ'),('TRK','MODE TRK'),('ARR','MODE ARR'),('SPLIT','SPLIT'),('COPY','COPY'),('MERGE','PASTE MERGE'),('UNDO','UNDO'),('REDO','REDO')]:
+   button=self.button(transport,t,lambda c=c:self.act(c),ORANGE if 'PLAY' in t else PANEL);button.pack(side='left',padx=2,pady=4)
+   if t in ('MRQ','TRK','ARR'):self.mode_buttons[t]=button
+  self.button(transport,'RANGE ▾',lambda:self.loop_tools(),BURG).pack(side='left',padx=2,pady=4)
   self.grid_section(center,9,'DEVICE CHAIN  /  ROUTING PREVIEW',MINT)
   self.devices=tk.Canvas(center,height=75,bg=PANEL2,highlightthickness=0);self.devices.grid(row=10,column=0,sticky='nsew');self.devices.bind('<Configure>',lambda e:self.draw_devices())
   self.center_panel=center
@@ -186,11 +192,14 @@ class CookUpWindow:
   for widget,manager in mapping:self.set_panel_visible(widget,manager,True)
   self._save_visibility()
  def draw_banner(self,e=None):
-  c=self.art;c.delete('all');w=max(1,c.winfo_width());h=max(1,c.winfo_height());c.create_rectangle(0,0,w,h,fill='#20121d',outline=ORANGE,width=2)
-  # No placeholder artwork: original PSG assets are not included in this source.
-  c.create_text(18,22,anchor='w',text='COOK UP MATRIX  /  BOOM BAP TOOLBOXX',fill=CREAM,font=('Segoe UI',20,'bold'))
-  c.create_text(20,60,anchor='w',text='SAMPLE  /  ARRANGE  /  PERFORM',fill=MINT,font=('Segoe UI',10,'bold'))
-  c.create_text(w-18,30,anchor='e',text=f'{sum(sample is not None for sample in self.app.engine.samples):02} / 32 PADS LOADED',fill=ORANGE,font=('Segoe UI',12,'bold'))
+  from street_visuals import scuffed_metal,skyline
+  c=self.art;c.delete('all');w=max(1,c.winfo_width());h=max(1,c.winfo_height())
+  c.create_rectangle(0,0,w,h,fill='#211d1a',outline='#94603b',width=2)
+  scuffed_metal(c,0,0,w,h,seed=14,density=90);skyline(c,max(500,w-410),0,w,h)
+  c.create_text(19,24,anchor='w',text='TOOLBOXX  /  COOK UP MATRIX',fill=CREAM,font=('Arial Black',20,'bold'))
+  c.create_text(21,57,anchor='w',text='NEW YORK  •  BOOM BAP  /  SAMPLE · ARRANGE · PERFORM',fill=MINT,font=('Segoe UI',9,'bold'))
+  c.create_rectangle(w-205,11,w-12,35,fill='#171615',outline='#73573c')
+  c.create_text(w-22,23,anchor='e',text=f'{sum(sample is not None for sample in self.app.engine.samples):02} / 32 PADS LOADED',fill=ORANGE,font=('Segoe UI',9,'bold'))
  def select_suite(self,event=None):
   s=self.labb_list.curselection()
   if s:self.app.labbs.selected=s[0];self.refresh()
@@ -201,11 +210,11 @@ class CookUpWindow:
  def draw_orbs(self):
   c=self.orbs;c.delete('all');w=max(1,c.winfo_width());step=w/8
   for i,n in enumerate(ORB_NAMES):
-   x=(i+.5)*step;y=43;r=min(29,step*.34);col=[ORANGE,MINT,PURPLE,BURG,CREAM,ORANGE,MINT,PURPLE][i]
+   x=(i+.5)*step;y=max(25,c.winfo_height()*.4);r=min(29,step*.34,c.winfo_height()*.29);col=[ORANGE,MINT,PURPLE,BURG,CREAM,ORANGE,MINT,PURPLE][i]
    for k in range(3,0,-1):c.create_oval(x-r-k*2,y-r-k*2,x+r+k*2,y+r+k*2,outline=col if i==self.selected_orb else '#38283b')
    c.create_oval(x-r,y-r,x+r,y+r,fill='#31233b',outline=col,width=2)
    c.create_arc(x-r+5,y-r+5,x+r-5,y+r-5,start=90,extent=-359*self.macro[n],style='arc',outline=col,width=4)
-   c.create_text(x,y,text=n[:2],fill=CREAM,font=('Segoe UI',12,'bold'));c.create_text(x,90,text=n,fill=CREAM,font=('Segoe UI',8,'bold'))
+   c.create_text(x,y,text=n[:2],fill=CREAM,font=('Segoe UI',12,'bold'));c.create_text(x,c.winfo_height()-12,text=n,fill=CREAM,font=('Segoe UI',8,'bold'))
  def draw_pad_deck(self):
   c=self.pad_deck;c.delete('all');w=max(1,c.winfo_width());h=max(1,c.winfo_height());cw=w/4;rh=h/4
   for row in range(4):
@@ -214,6 +223,8 @@ class CookUpWindow:
     index=self.app.bank*16+(3-row)*4+col;selected=index==self.app.selected_pad;loaded=self.app.engine.samples[index] is not None
     x=col*cw;y=row*rh;color=MINT if selected else ORANGE if loaded else PURPLE
     c.create_rectangle(x+2,y+2,x+cw-2,y+rh-2,fill='#30251d' if loaded else '#201724',outline=color,width=2 if selected else 1)
+    c.create_line(x+5,y+5,x+cw-6,y+5,fill='#65513b')
+    c.create_line(x+cw-13,y+rh-5,x+cw-5,y+rh-5,fill='#4b3933')
     c.create_text(x+7,y+rh/2,anchor='w',text=f'{index+1:02}',fill=CREAM,font=('Segoe UI',9,'bold'))
     c.create_oval(x+cw-12,y+rh/2-2,x+cw-8,y+rh/2+2,fill=ORANGE if loaded else '#514258',outline='')
  def pad_at(self,e):
@@ -243,65 +254,111 @@ class CookUpWindow:
   c.create_text(w-10,h-7,anchor='se',text=f'{len(data)/rate:.2f}s  •  {rate/1000:g} kHz',fill=MINT,font=('Segoe UI',8))
  def draw_matrix(self):
   c=self.matrix;c.delete('all');w=max(1,c.winfo_width());left=42;cw=max(6,(w-left-8)/16);pat=self.app.active_pattern()
-  rh=max(30,(c.winfo_height()-6)/4)
+  rh=max(18,(c.winfo_height()-6)/4)
   for r in range(4):
    pad=(self.app.selected_pad//4)*4+r;c.create_text(19,5+r*rh+rh/2,text=f'{pad+1:02}',fill=CREAM,font=('Segoe UI',9,'bold'))
    for j in range(16):
     x=left+j*cw;y=5+r*rh;on=pat[pad][j];col=[MINT,PURPLE,ORANGE,BURG][r] if on else '#33243b';c.create_rectangle(x+2,y,x+cw-2,y+rh-5,fill=col,outline='#65465e' if j%4==0 else '#35283d');
     if j%4==0:c.create_text(x+5,y+3,anchor='nw',text=str(j+1),fill=BG if on else DIM,font=('Segoe UI',7))
  def matrix_click(self,e):
-  w=max(1,self.matrix.winfo_width());cw=(w-50)/16;r=int((e.y-5)//max(30,(self.matrix.winfo_height()-6)/4));j=int((e.x-42)//cw)
+  w=max(1,self.matrix.winfo_width());cw=(w-50)/16;r=int((e.y-5)//max(18,(self.matrix.winfo_height()-6)/4));j=int((e.x-42)//cw)
   if 0<=r<4 and 0<=j<16:self.app.selected_pad=(self.app.selected_pad//4)*4+r;self.app.toggle_step(j);self.refresh()
  def _loop_scale(self):
   return max(1,(max(1,self.loop_bar.winfo_width())-102)/48)*self.arr_zoom
  def draw_loop_bar(self):
   if not hasattr(self,'loop_bar'):return
-  c=self.loop_bar;c.delete('all');w=max(1,c.winfo_width());scale=self._loop_scale();left=90
-  c.create_text(9,17,text='LOOP',anchor='w',fill=MINT,font=('Segoe UI',9,'bold'))
-  start=left+(self.app.arr.loop_start-self.arr_view_start)*scale;end=left+(self.app.arr.loop_end-self.arr_view_start)*scale
-  c.create_rectangle(max(left,start),5,min(w,end),29,fill=BURG,outline=MINT,width=2)
-  for x in [start,end]:
-   if left<=x<=w:c.create_line(x,4,x,30,fill=ORANGE,width=4)
-  c.create_text(min(w-8,max(left+8,(start+end)/2)),17,text='↔  LOOP BRACE',fill=CREAM,font=('Segoe UI',8,'bold'))
+  c=self.loop_bar;c.delete('all');w=max(1,c.winfo_width());scale=self._loop_scale();left=90;arr=self.app.arr
+  c.create_text(9,17,text=arr.mode,anchor='w',fill=MINT,font=('Segoe UI',9,'bold'))
+  start=left+(arr.loop_start-self.arr_view_start)*scale;end=left+(arr.loop_end-self.arr_view_start)*scale
+  x0,x1=max(left,start),min(w-2,end)
+  if x1>x0:
+   c.create_rectangle(x0,5,x1,29,fill=BURG if arr.loop_enabled else '#322b36',outline=MINT,width=2)
+   for x in [start,end]:
+    if left<=x<=w:c.create_line(x,4,x,30,fill=ORANGE,width=5)
+   if x1-x0>105:c.create_text((x0+x1)/2,17,text=f'{arr.loop_start/4+1:g} → {arr.loop_end/4+1:g}  •  '+('LOOP' if arr.loop_enabled else 'LOOP OFF'),fill=CREAM,font=('Segoe UI',8,'bold'))
+  for mode,button in self.mode_buttons.items():button.config(bg=ORANGE if mode==arr.mode else PANEL,fg=BG if mode==arr.mode else CREAM)
+ def _loop_hit(self,x):
+  scale=self._loop_scale();start=90+(self.app.arr.loop_start-self.arr_view_start)*scale;end=90+(self.app.arr.loop_end-self.arr_view_start)*scale
+  if x<90:return None
+  if abs(x-start)<10:return 'start'
+  if abs(x-end)<10:return 'end'
+  if start<x<end:return 'body'
+  return None
+ def loop_hover(self,e):
+  edge=self._loop_hit(e.x);self.loop_bar.config(cursor='sb_h_double_arrow' if edge in ('start','end') else 'fleur' if edge else 'arrow')
+ def loop_tools(self,e=None):
+  if e is None:
+   from types import SimpleNamespace
+   e=SimpleNamespace(x_root=self.loop_bar.winfo_rootx()+100,y_root=self.loop_bar.winfo_rooty()+34)
+  self.loop_drag=None
+  menu=tk.Menu(self.win,tearoff=False,bg=PANEL,fg=CREAM,activebackground=ORANGE)
+  for label,cmd in [('Copy range','RANGE COPY'),('Cut range','RANGE CUT'),('Paste at playhead','RANGE PASTE'),('Duplicate after range','RANGE DUPLICATE'),('Duplicate + insert time','RANGE INSERT'),('Clear range','RANGE DELETE'),('Loop on / off','LOOP TOGGLE'),('Loop whole song','LOOP ALL'),('Focus loop for jog control','LOOP FOCUS')]:menu.add_command(label=label,command=lambda c=cmd:self.act(c))
+  try:menu.tk_popup(e.x_root,e.y_root)
+  finally:menu.grab_release()
  def loop_press(self,e):
-  scale=self._loop_scale();start=self.app.arr.loop_start;end=self.app.arr.loop_end
-  sx=90+(start-self.arr_view_start)*scale;ex=90+(end-self.arr_view_start)*scale
-  if abs(e.x-sx)<12:edge='start'
-  elif abs(e.x-ex)<12:edge='end'
-  elif sx<e.x<ex:edge='body'
-  else:return
-  self.loop_drag=(e.x,start,end,edge)
+  edge=self._loop_hit(e.x)
+  if edge:self.loop_drag={'x':e.x,'start':self.app.arr.loop_start,'end':self.app.arr.loop_end,'edge':edge,'checkpoint':False}
  def loop_move(self,e):
   if self.loop_drag is None:return
-  anchor,start,end,edge=self.loop_drag;delta=(e.x-anchor)/self._loop_scale()
-  if edge=='start':self.app.arr.loop_start=max(0,min(end-.25,start+delta))
-  elif edge=='end':self.app.arr.loop_end=max(start+.25,end+delta)
-  else:
-   delta=max(-start,delta);self.app.arr.loop_start=start+delta;self.app.arr.loop_end=end+delta
-  self.draw_loop_bar();self.draw_arrange()
- def loop_release(self,e):self.loop_drag=None
+  d=self.loop_drag;delta=self.app.arr.quant((e.x-d['x'])/self._loop_scale());start,end=d['start'],d['end']
+  if d['edge']=='start':start=max(0,min(end-.25,start+delta))
+  elif d['edge']=='end':end=max(start+.25,end+delta)
+  else:delta=max(-start,delta);start+=delta;end+=delta
+  if (start,end)==(self.app.arr.loop_start,self.app.arr.loop_end):return
+  if not d['checkpoint']:self.app.arr.checkpoint();d['checkpoint']=True
+  self.app.arr.loop_start=start;self.app.arr.loop_end=end;self.app.range_editor.select();self.draw_arrange()
+ def loop_release(self,e):
+  self.loop_drag=None;self.app._refresh()
+ def _arr_position(self,e):
+  scale=max(1,(max(1,self.arrange.winfo_width())-102)/48)*self.arr_zoom;rowh=max(14,(self.arrange.winfo_height()-48)/6)
+  return max(0.,self.arr_view_start+(e.x-90)/scale),max(0,min(5,int((e.y-44)//rowh)))
+ def arr_press(self,e):
+  beat,track=self._arr_position(e)
+  if e.y<44:self.arr_click(e);return
+  self.app.arr.focus_track=track
+  if e.x<90:
+   self.app.range_editor.track_range=(track,track);self.app.range_editor.select();self.refresh();return
+  self.range_drag={'beat':beat,'track':track,'x':e.x,'y':e.y}
+  self.arr_click(e)
+ def arr_move(self,e):
+  if not self.range_drag:return
+  d=self.range_drag
+  if abs(e.x-d['x'])+abs(e.y-d['y'])<4:return
+  beat,track=self._arr_position(e)
+  end_track=track if self.app.arr.mode=='MRQ' else d['track']
+  self.app.range_editor.set_range(d['beat'],beat,d['track'],end_track);self.draw_arrange()
+ def arr_release(self,e):
+  self.range_drag=None;self.app._refresh();self.refresh()
  def draw_arrange(self):
   c=self.arrange;c.delete('all');w=max(1,c.winfo_width());h=max(1,c.winfo_height());left=90;scale=max(1,(w-left-12)/48)*self.arr_zoom
   self.draw_loop_bar()
-  for beat in range(0,49,4):
+  first=int(self.arr_view_start//4)*4;last=int(self.arr_view_start+48/self.arr_zoom)+8
+  for beat in range(first,last,4):
    x=left+(beat-self.arr_view_start)*scale;c.create_line(x,24,x,h,fill='#392a3d');c.create_text(x+2,26,text=str(beat//4+1),anchor='nw',fill=DIM,font=('Segoe UI',8))
-  rowh=max(23,(h-48)/6)
+  rowh=max(14,(h-48)/6)
   for t in range(6):
    y=44+t*rowh;c.create_text(6,y+8,text=['DRUMS','BASS','KEYS','CHOP','VOX','FX'][t],fill=CREAM,anchor='w',font=('Segoe UI',8,'bold'));c.create_line(left,y+rowh-3,w,y+rowh-3,fill='#38293c')
+  tracks=self.app.range_editor.scope_tracks();lo=self.app.arr.loop_start;hi=self.app.arr.loop_end
+  for track in range(6):
+   if tracks is None or track in tracks:
+    x0=max(left,left+(lo-self.arr_view_start)*scale);x1=min(w,left+(hi-self.arr_view_start)*scale)
+    if x1>x0:c.create_rectangle(x0,44+track*rowh,x1,44+(track+1)*rowh-3,fill='#392735',outline='')
   for clip in self.app.arr.clips:
    t=clip['track'];
    if t>5:continue
    x=left+(clip['start']-self.arr_view_start)*scale;x2=x+clip['length']*scale;y=44+t*rowh;selected=clip['id'] in self.app.arr.selected
+   if x2<left or x>w:continue
+   x=max(left,x);x2=min(w,x2)
    c.create_rectangle(x,y,x2,y+rowh-6,fill=COLORS[t],outline=CREAM if selected else BG,width=2 if selected else 1,tags=('clip',clip['id']))
    c.create_text(x+4,y+(rowh-6)/2,text=clip['name'][:18],anchor='w',fill=BG,font=('Segoe UI',8,'bold'),tags=('clip',clip['id']))
   x=left+(self.app.playhead-self.arr_view_start)*scale;c.create_line(x,23,x,h,fill=CREAM,width=2)
  def arr_click(self,e):
   w=max(1,self.arrange.winfo_width());left=90;scale=max(1,(w-left-12)/48)*self.arr_zoom
-  if e.y<24:self.app.playhead=max(0,self.arr_view_start+(e.x-left)/scale);self.refresh();return
+  if e.y<44:self.app.playhead=max(0,self.arr_view_start+(e.x-left)/scale);self.refresh();return
   for item in reversed(self.arrange.find_overlapping(e.x,e.y,e.x,e.y)):
    tags=self.arrange.gettags(item)
    if 'clip' in tags:self.app.arr.select([tags[-1]]);self.app._refresh();self.refresh();return
-  self.app.playhead=max(0,self.arr_view_start+(e.x-left)/scale);self.refresh()
+  self.app.arr.select([]);self.refresh()
  def mouse_pan_start(self,e):
   # Middle button never seeks, selects, or mutates clips.
   self.mouse_pan_anchor=(e.x,self.arr_view_start)

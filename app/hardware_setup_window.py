@@ -14,8 +14,9 @@ class HardwareSetupWindow:
   self.device=ttk.Combobox(ports,width=52,state='readonly');self.device.pack(side='left',padx=4)
   for label,fn in [('SCAN',self.scan),('CONNECT',self.connect),('DISCONNECT',self.app.close_midi)]:tk.Button(ports,text=label,command=fn).pack(side='left',padx=3)
   self.connection=tk.Label(self.win,bg='#17151c',fg='#8ce3c9');self.connection.pack()
+  from toolboxx import COMMANDS
   row=tk.Frame(self.win,bg='#17151c');row.pack(pady=12)
-  for index,(name,var,options) in enumerate([('TYPE',self.kind,['note','cc']),('CHANNEL (0-15)',self.channel,list(range(16))),('NOTE / CC',self.number,list(range(128))),('MODE',self.mode,['button']+list(VALID_MODES)),('COMMAND',self.command,['HW JOG','JOG','JOG CLICK','JOG BACK','JOG SHIFT','PLAY/STOP','RECORD','PAGE NEXT','PAGE PREV','LABB NEXT','LABB PREV','LABB PLAY','EDIT:MOVE','EDIT:MARQUEE','EDIT:TRIM LEFT','EDIT:TRIM RIGHT','EDIT:LOOP START','EDIT:LOOP END','EDIT:LOOP MOVE','UNDO','REDO','SHIFT','BANK NEXT','BANK PREV']+[f'PAD {i+1}' for i in range(32)]+[f'BANK PAD {i+1}' for i in range(16)])]):
+  for index,(name,var,options) in enumerate([('TYPE',self.kind,['note','cc']),('CHANNEL (0-15)',self.channel,list(range(16))),('NOTE / CC',self.number,list(range(128))),('MODE',self.mode,['button']+list(VALID_MODES)),('COMMAND',self.command,list(dict.fromkeys(['HW JOG','JOG','SHIFT']+COMMANDS))) ]):
    frame=tk.Frame(row,bg='#17151c');frame.grid(row=index//3,column=index%3,padx=12,pady=5,sticky='ew')
    tk.Label(frame,text=name,bg='#17151c',fg='#f3e5c9',font=('Segoe UI',8)).pack()
    combo=ttk.Combobox(frame,textvariable=var,values=options,width=29,state='readonly');combo.pack()
@@ -30,7 +31,7 @@ class HardwareSetupWindow:
   self.status=tk.Label(self.win,text='No hardware is connected automatically. Use MIDI MAP > SCAN / CONNECT.',bg='#17151c',fg='#8ce3c9',wraplength=700);self.status.pack(pady=12)
   self.win.protocol('WM_DELETE_WINDOW',self.close);self.scan();self.poll()
  def command_changed(self,event=None):
-  if self.command.get() not in ('HW JOG','JOG'):self.mode.set('button')
+  if self.command.get() not in ('HW JOG','JOG') and not self.command.get().endswith((' +',' -')):self.mode.set('button')
   elif self.mode.get()=='button':self.mode.set('relative_twos_complement')
  def scan(self):
   selected=self.device.get();names=self.app.scan_midi();self.device['values']=names

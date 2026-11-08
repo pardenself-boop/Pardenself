@@ -190,6 +190,8 @@ def load_project(app, source):
         app.engine.labbs = staged['engine'].labbs
         app.labbs = app.engine.labbs
         app.arr = staged['arr']
+        from arranger_ranges import RangeEditor
+        app.range_editor = RangeEditor(app.arr)
         app.clips = app.arr.clips
         app.notes = staged['notes']
         app.suites = staged['suites']

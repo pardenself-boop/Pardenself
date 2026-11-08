@@ -58,3 +58,49 @@ jobs:
             BUILD_*_LOG.txt
             BUILD_DEPENDENCIES.txt
           if-no-files-found: warn
+
+  release:
+    needs: package
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: TOOLBOXX-Windows-installer
+          path: installer
+      - name: Publish single development installer after all Windows checks
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os, subprocess
+          release=json.loads(Path('release.json').read_text())
+          files=list(Path('installer').iterdir())
+          assert [p.name for p in files]==[release['installer']], 'Expected one Setup.exe'
+          data=files[0].read_bytes()
+          assert data[:2]==b'MZ'
+          digest=hashlib.sha256(data).hexdigest()
+          notes=Path('RELEASE_NOTES.md').read_text() if Path('RELEASE_NOTES.md').exists() else 'Windows development installer.'
+          notes+='
+
+Windows installer build, installation, startup and uninstallation checks passed.
+
+SHA256: `'+digest+'`
+'
+          notes+='
+Build: https://github.com/'+os.environ['GITHUB_REPOSITORY']+'/actions/runs/'+os.environ['GITHUB_RUN_ID']+'
+'
+          Path('release-notes.txt').write_text(notes)
+          tag='build-'+release['build']
+          existing=subprocess.run(['gh','release','view',tag],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+          if existing.returncode==0:
+              print('Existing release preserved:',tag)
+          else:
+              subprocess.run(['gh','release','create',tag,str(files[0]),'--target',os.environ['GITHUB_SHA'],'--title','TOOLBOXX Build '+release['build']+' - Windows installer','--notes-file','release-notes.txt','--prerelease'],check=True)
+          PY
