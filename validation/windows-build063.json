@@ -1,0 +1,26 @@
+{
+  "build": "063",
+  "source_commit": "f3f6ae5aececbe21304d01e47c26b28d201041da",
+  "workflow_run": 42517049540,
+  "workflow_url": "https://github.com/pardenself-boop/Pardenself/actions/runs/42517049540",
+  "runner": "Windows Server 2022",
+  "unit_tests": 176,
+  "checks": {
+    "package": "passed",
+    "upgrade_from_062": "passed",
+    "existing_user_file_preserved": "passed",
+    "installed_startup": "passed",
+    "normal_launch_and_close": "passed",
+    "uninstall": "passed",
+    "live_updater_finds_063_from_062": "passed",
+    "live_updater_download_and_hash_verification": "passed",
+    "current_063_reports_up_to_date": "passed",
+    "native_offline_updater_UI": "passed"
+  },
+  "installer": "BOOM_BAP_TOOLBOXX_Setup_063.exe",
+  "bytes": 28799764,
+  "sha256": "a62fbd8412b6780f45b8190aecf9b9bc3ff1e8400417ddef1ed3775ed22f03cf",
+  "download": "https://github.com/pardenself-boop/Pardenself/releases/download/build-063/BOOM_BAP_TOOLBOXX_Setup_063.exe",
+  "signature": "unsigned",
+  "hardware": "Actual Windows 11 audio/MIDI hardware unverified. User reports Build 062 installed and opened easily on their Windows PC."
+}
