@@ -17,7 +17,7 @@ Expected successful Windows outputs:
 - dist/SHA256.txt
 - BUILD_060_LOG.txt and BUILD_DEPENDENCIES.txt
 
-The GitHub workflow at .github/workflows/windows-installer.yml performs the same build on windows-2022 and uploads TOOLBOXX-Windows-installer. The workflow additionally checks silent installation, installed-app startup and uninstallation. Its installer artifact contains only the single Setup.exe; build logs are a separate diagnostic artifact. It has not been run in this session. No executable or installer is included in this source archive; Windows compilation and installation have not been verified.
+The GitHub workflow at .github/workflows/windows-installer.yml performs the same build on windows-2022 and uploads TOOLBOXX-Windows-installer. The workflow additionally checks silent installation, installed-app startup and uninstallation. Its installer artifact contains only the single Setup.exe; build logs are a separate diagnostic artifact. Windows run 42482676866 passed: all 111 tests, packaged startup, installer compilation, silent installation, installed-app startup and uninstallation. The verified installer is a separate release asset; it is not part of the development source archive.
 
 ## Build 060 changes
 
@@ -42,7 +42,7 @@ Build 058 fixed Cook Up initialization and the inconsistent Windows installer pi
 - Real Tk controller setup interactions: passed for note learn, bank-aware command dispatch, encoder learn and cancellation, without callback errors. MIDI events were simulated; no NI hardware was attached.
 - Offline audio: 48 kHz stereo PCM, 48,000 frames, peak 0.086170, RMS 0.038923, no clipped frames. Left/right contain the engine's mono signal.
 
-See validation/ for logs and UI screenshots. Windows live audio, physical Maschine Studio operation, native HID/screens/LEDs, installer execution and a VST build remain unverified or unimplemented as documented. This package is a tested development milestone, not a finished commercial DAW.
+See validation/ for logs and UI screenshots. Windows 11 live audio and physical Maschine Studio operation remain unverified. Native HID/screens/LEDs and a VST build remain unimplemented. Installer execution, installed-app startup and uninstallation were verified on Windows Server 2022. This package is a tested development milestone, not a finished commercial DAW.
 
 ## Changed files since Build 059
 
@@ -52,4 +52,8 @@ Added: tests/test_maschine_workflow_060.py, TEST_AUDIO_MIDI_DOUBLE_CLICK.cmd, TE
 
 ## User delivery requirement
 
-Deliver one all-in-one Windows 11 Setup.exe, not loose Python files or a source ZIP. The source archive is only a development backup. Inno Setup embeds the bundled runtime and libraries with disk spanning disabled. Windows compilation remains blocked until a Windows runner or accessible project repository is available.
+Deliver one all-in-one Windows 11 Setup.exe, not loose Python files or a source ZIP. The source archive is only a development backup. Inno Setup embeds the bundled runtime and libraries with disk spanning disabled. Windows compilation is complete. The single installer is BOOM_BAP_TOOLBOXX_Setup_060.exe (28,721,355 bytes), with SHA256 aa84bd788fa1517f952d6633cec77cd756b69baff24c6a8d2899e4b0123066c8. Build evidence: https://github.com/pardenself-boop/Pardenself/actions/runs/42482676866 .
+
+## Windows build repairs
+
+Pinned the available Inno Setup 6.7.1 compiler, normalized Windows short-path aliases in the moved-project regression test, and resolved the bundled WAV asset from the absolute repository path for PyInstaller. The release executable comes from tested source commit e9b094e1713c9111b33eb787c5afdbda73c60c78. A separate Build 060 publication workflow verifies that source revision and installer checksum before uploading the single executable.
