@@ -1,0 +1,18 @@
+{
+  "build": "061",
+  "source_commit": "99f245f0c8f809bc76f9f7bd5dcfb366858279ec",
+  "workflow_run": 42486628555,
+  "runner_os": "Windows Server 2022",
+  "tests_passed": 144,
+  "installer_compilation": "passed",
+  "packaged_startup": "passed",
+  "installation": "passed",
+  "installed_startup": "passed",
+  "uninstallation": "passed",
+  "release_upload": "passed",
+  "direct_download_sha256_verified": true,
+  "sha256": "26f1353c4598a73f701ad54649f1a21e70ce995d4ecd2330bfa7d45edd84762c",
+  "bytes": 28778769,
+  "native_controller_displays": "not implemented",
+  "physical_windows11_audio_and_controller": "untested"
+}
