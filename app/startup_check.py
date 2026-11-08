@@ -18,11 +18,16 @@ def run():
         assert len(app.pattern) == 32, 'Missing sample pads'
         app.open_dual_screen()
         assert app.controller_map_window.canvas.winfo_exists(), 'Controller surface did not open'
+        before=app.labbs.serialize()
+        app.open_sound_browser()
+        root.update()
+        assert app.labbs.serialize()==before, 'Opening the sound editor changed the patch'
+        app.open_mix_rack()
         window.refresh()
         root.update()
         if errors:
             raise RuntimeError(f'Tk callback failed: {errors[0]}') from errors[0]
-        print('PASS: workstation, Cook Up and controller map startup; 22 LABBs, 32 pads')
+        print('PASS: workstation, Cook Up and controller map, sound browser and FX startup; 22 LABBs, 32 pads')
         return 0
     finally:
         if app is not None:

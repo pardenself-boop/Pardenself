@@ -123,6 +123,11 @@ def bounce_track_city(engine, arranger, patterns, bpm, output, bars=None, note_l
     from toolboxx import Engine
     offline=Engine()
     offline.samples=list(engine.samples)
+    offline.sample_paths=list(engine.sample_paths)
+    offline.labbs.deserialize(engine.labbs.serialize())
+    offline.labbs.crate.slots=dict(engine.labbs.crate.slots)
+    from mix_rack import MixRack
+    offline.mix_rack=MixRack.from_json(engine.mix_rack.to_json())
     audio_clips = collect_audio_clips(arranger, bars * 4)
     # Preload and validate every audio source before writing the output file.
     for clip in audio_clips:

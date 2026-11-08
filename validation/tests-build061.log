@@ -100,6 +100,16 @@ test_automation_reaches_parameter_callback (test_street_dispatch.Tests.test_auto
 test_encoder_dispatch (test_street_dispatch.Tests.test_encoder_dispatch) ... ok
 test_mapped_note_does_not_play (test_street_dispatch.Tests.test_mapped_note_does_not_play) ... ok
 test_unmapped_note_on_and_off (test_street_dispatch.Tests.test_unmapped_note_on_and_off) ... ok
+test_bounce_uses_rack_without_consuming_live_voices (test_street_fx_061.StreetFXTests.test_bounce_uses_rack_without_consuming_live_voices) ... ok
+test_clipper_enforces_ceiling_and_dry_mix (test_street_fx_061.StreetFXTests.test_clipper_enforces_ceiling_and_dry_mix) ... ok
+test_compressor_reduces_sustained_peak (test_street_fx_061.StreetFXTests.test_compressor_reduces_sustained_peak) ... ok
+test_density_has_audible_effect_and_zero_amount_is_transparent (test_street_fx_061.StreetFXTests.test_density_has_audible_effect_and_zero_amount_is_transparent) ... ok
+test_empty_bypassed_and_hidden_have_correct_audio_semantics (test_street_fx_061.StreetFXTests.test_empty_bypassed_and_hidden_have_correct_audio_semantics) ... ok
+test_engine_master_rack_reaches_output (test_street_fx_061.StreetFXTests.test_engine_master_rack_reaches_output) ... ok
+test_eq_boosts_low_frequency_and_flat_is_transparent (test_street_fx_061.StreetFXTests.test_eq_boosts_low_frequency_and_flat_is_transparent) ... ok
+test_filter_and_compressor_state_survive_block_boundaries (test_street_fx_061.StreetFXTests.test_filter_and_compressor_state_survive_block_boundaries) ... ok
+test_project_recalls_rack_order_parameters_and_engine_alias (test_street_fx_061.StreetFXTests.test_project_recalls_rack_order_parameters_and_engine_alias) ... ok
+test_track_city_bounce_restores_instrument_mute_and_fx (test_street_fx_061.StreetFXTests.test_track_city_bounce_restores_instrument_mute_and_fx) ... ok
 test_bounded_drain (test_street_midi_queue_037.QueueTests.test_bounded_drain) ... ok
 test_order_and_snapshot (test_street_midi_queue_037.QueueTests.test_order_and_snapshot) ... ok
 test_overflow_panic (test_street_midi_queue_037.QueueTests.test_overflow_panic) ... ok
@@ -109,6 +119,11 @@ test_note_on_off (test_street_note_router_042.NoteRouterTests.test_note_on_off) 
 test_panic (test_street_note_router_042.NoteRouterTests.test_panic) ... ok
 test_sustain (test_street_note_router_042.NoteRouterTests.test_sustain) ... ok
 test_velocity_zero (test_street_note_router_042.NoteRouterTests.test_velocity_zero) ... ok
+test_arrange_knobs_edit_loop_and_preview_clip_edit (test_surface_context_061.ContextTests.test_arrange_knobs_edit_loop_and_preview_clip_edit) ... ok
+test_fx_knob_changes_real_chain_parameters (test_surface_context_061.ContextTests.test_fx_knob_changes_real_chain_parameters) ... ok
+test_own_bank_applies_real_patch_and_arms_instrument (test_surface_context_061.ContextTests.test_own_bank_applies_real_patch_and_arms_instrument) ... ok
+test_same_soft_key_changes_by_context (test_surface_context_061.ContextTests.test_same_soft_key_changes_by_context) ... ok
+test_sound_knob_changes_real_selected_instrument (test_surface_context_061.ContextTests.test_sound_knob_changes_real_selected_instrument) ... ok
 test_audio_clip_renders_to_bounce (test_track_city_audio_bounce_055.AudioBounceTests.test_audio_clip_renders_to_bounce) ... ok
 test_missing_audio_fails_before_output (test_track_city_audio_bounce_055.AudioBounceTests.test_missing_audio_fails_before_output) ... ok
 test_muted_audio_is_ignored (test_track_city_audio_bounce_055.AudioBounceTests.test_muted_audio_is_ignored) ... ok
@@ -129,6 +144,6 @@ test_button_zero_ignored (test_wiretap_bridge.BridgeTests.test_button_zero_ignor
 test_profile_compatible (test_wiretap_bridge.BridgeTests.test_profile_compatible) ... ok
 
 ----------------------------------------------------------------------
-Ran 129 tests in 0.417s
+Ran 144 tests in 0.746s
 
 OK

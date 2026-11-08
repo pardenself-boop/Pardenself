@@ -1,6 +1,6 @@
 # BOOM BAP TOOLBOXX — Build 061
 
-Native Windows DAW prototype with Cook Up Matrix, 22 LABBs, a 32-slot sample deck, Track City, and Native Instruments Maschine Studio MIDI setup.
+Native Windows DAW prototype with Cook Up Matrix, 22 LABBs, a 32-slot sample deck, Track City, our sound banks, real master FX, and Native Instruments Maschine Studio control mapping.
 
 ## Windows installer
 
@@ -14,7 +14,7 @@ Build 061 is an unsigned development release. Windows 11 audio playback and phys
 
 ## Controller workflow
 
-Open **STUDIO MAP** for the editable physical-control diagram and guided sixteen-pad learn. The display areas are software mirrors; physical screen output is not implemented. Use **MASCHINE SETUP** to scan/select the Studio's Controller Editor MIDI input, connect, choose a command/mode, and learn a physical control. Use **BANK PAD 1–16** for one physical pad map that follows the DAW bank; **PAD 1–32** remain absolute assignments. Projects save both controller bindings and audio source references.
+Open **STUDIO MAP** for the editable physical-control diagram and guided sixteen-pad learn. Arrange/Sound/Browse/FX contexts keep soft keys and encoders in sync with our instruments and chain. The display areas are software mirrors; physical screen output is not implemented. Use **MASCHINE SETUP** to scan/select the Studio's Controller Editor MIDI input, connect, choose a command/mode, and learn a physical control. Use **BANK PAD 1–16** for one physical pad map that follows the DAW bank; **PAD 1–32** remain absolute assignments. Projects save both controller bindings and audio source references.
 
 The Start Menu **STREET SOUND CHECK (Audio + MIDI)** shortcut opens the test window. Close other MIDI clients if the Windows driver only permits one client at a time.
 

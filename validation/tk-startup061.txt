@@ -1,1 +1,1 @@
-PASS: workstation, Cook Up and controller map startup; 22 LABBs, 32 pads
+PASS: workstation, Cook Up and controller map, sound browser and FX startup; 22 LABBs, 32 pads

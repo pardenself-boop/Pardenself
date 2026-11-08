@@ -14,6 +14,7 @@ class ControllerMapWindow:
         top=tk.Frame(self.win,bg=PANEL);top.pack(fill='x')
         tk.Label(top,text='TOOLBOXX  /  STREET CONTROL DECK',font=('Segoe UI',17,'bold'),bg=PANEL,fg=CREAM).pack(side='left',padx=14,pady=12)
         for text,fn in [('SAVE MAP',self.save),('LOAD MAP',self.load),('MIDI CONNECTION',app.open_hardware_setup),('TEACH 16 PADS',app.arm_pad_learn)]:self.button(top,text,fn).pack(side='right',padx=4)
+        self.page=tk.StringVar(value=app.surface_context.page);pages=ttk.Combobox(top,textvariable=self.page,values=app.surface_context.PAGES,width=10,state='readonly');pages.pack(side='right',padx=5);pages.bind('<<ComboboxSelected>>',lambda event:app.surface_context.set_page(self.page.get()))
         body=tk.Frame(self.win,bg=BG);body.pack(fill='both',expand=True,padx=12,pady=10)
         self.canvas=tk.Canvas(body,bg=BG,highlightthickness=0);self.canvas.pack(side='left',fill='both',expand=True)
         self.canvas.bind('<Configure>',lambda event:self.draw());self.canvas.bind('<ButtonPress-1>',self.press);self.canvas.bind('<B1-Motion>',self.motion);self.canvas.bind('<ButtonRelease-1>',self.release)
@@ -49,7 +50,7 @@ class ControllerMapWindow:
     def select(self,key):
         self.selected=key;control=BY_KEY[key];address,info=self.binding(key)
         self.control_label.config(text=key);self.command.set(info['command'] if info else control.command)
-        self.mode.set(info['mode'] if info else 'relative_twos_complement' if control.encoder and control.command in ('HW JOG','JOG','LOOP MOVE +','LOOP START +','LOOP END +') else 'button')
+        self.mode.set(info['mode'] if info else 'relative_twos_complement' if control.encoder and (control.command in ('HW JOG','JOG') or control.command.endswith((' +',' -'))) else 'button')
         if address:
             kind,channel,number=address.split(':');self.kind.set(kind);self.channel.set(int(channel));self.number.set(int(number))
         self.address_label.config(text=address or 'Unmapped — learn or enter an address')
@@ -136,12 +137,33 @@ class ControllerMapWindow:
             if control.key=='JOG ROTATE':
                 for inset in (5,10,15):c.create_oval(x0+inset,y0+inset,x1-inset,y1-inset,outline='#514a53')
             c.create_text((x0+x1)/2,(y0+y1)/2,text=control.label,fill=CREAM,font=('Segoe UI',max(6,min(9,int(w/110))),'bold'))
+            if control.key.startswith('KNOB '):
+                index=int(control.key[5:])-1;label,value=self.app.surface_context.values()[index]
+                c.create_text((x0+x1)/2,y1+10,text=label[:12],fill=MINT,font=('Segoe UI',7,'bold'))
             if self.edit_layout.get() and selected:c.create_rectangle(x0-3,y0-3,x1+3,y1+3,outline=ORANGE,dash=(3,2))
         c.create_text(.045*w,.965*h,anchor='w',text='SELECT TO MAP  •  MINT: SELECTED  •  ORANGE: ASSIGNED',fill=MINT,font=('Segoe UI',8,'bold'))
     def draw_screens(self,w,h):
         c=self.canvas;app=self.app
         for x0,x1 in ((.235,.506),(.516,.796)):c.create_rectangle(x0*w,.135*h,x1*w,.323*h,fill='#0d1116',outline='#655765',width=2)
         left=.245*w;right=.525*w;top=.15*h;width=.25*w;height=.16*h
+        context=app.surface_context
+        if context.page!='ARRANGE':
+            from labb_engine import LABBS
+            from street_fx import NAMES
+            title='STREET FX CHAIN' if context.page=='FX' else 'STREET BANKS / '+LABBS[app.labbs.selected].name
+            c.create_text(left,top,anchor='nw',text=title[:30],fill=MINT,font=('Segoe UI',9,'bold'))
+            if context.page=='FX':
+                if not app.mix_rack.modules:c.create_text(left,top+35,anchor='w',text='Use soft keys to add our FX',fill=CREAM,font=('Segoe UI',8))
+                for index,module in enumerate(app.mix_rack.modules[:5]):
+                    c.create_text(left,top+24+index*17,anchor='nw',text=('▶ ' if index==context.fx_index else '  ')+NAMES[module.kind]+('' if module.enabled else ' [BYP]'),fill=ORANGE if index==context.fx_index else CREAM,font=('Segoe UI',8))
+            else:
+                from street_sounds import SOUNDS
+                c.create_text(left,top+30,anchor='nw',text=SOUNDS[context.sound_index][0] if SOUNDS[context.sound_index][1]==app.labbs.selected else 'USER SOUND / '+LABBS[app.labbs.selected].name,fill=ORANGE,font=('Segoe UI',10,'bold'))
+                c.create_text(left,top+57,anchor='nw',text=LABBS[app.labbs.selected].wave.upper()+'  /  LIVE LABB ENGINE',fill=CREAM,font=('Segoe UI',8))
+            c.create_text(right,top,anchor='nw',text='PARAMETER PAGE / '+context.page,fill=ORANGE,font=('Segoe UI',9,'bold'))
+            for index,(label,value) in enumerate(context.values()):
+                c.create_text(right+(index//4)*width/2,top+25+(index%4)*19,anchor='nw',text=f'{label[:11]} {value:.2f}',fill=CREAM,font=('Segoe UI',8))
+            self.draw_soft_labels(w,h);return
         c.create_text(left,top,anchor='nw',text=f'SOUND  {app.selected_pad+1:02}  /  BANK {"AB"[app.bank]}',fill=MINT,font=('Segoe UI',9,'bold'))
         sample=app.engine.samples[app.selected_pad]
         if sample:
@@ -164,10 +186,13 @@ class ControllerMapWindow:
             if b<=a:continue
             y=top+39+clip['track']*row
             c.create_rectangle(right+a*scale,y,right+b*scale,y+row-2,fill=ORANGE if clip['track']==0 else PURPLE,outline=MINT if clip['id'] in app.arr.selected else '')
-        for i,(label,cmd) in enumerate([('MRQ','MODE MRQ'),('TRK','MODE TRK'),('ARR','MODE ARR'),('LOOP','LOOP TOGGLE'),('COPY','RANGE COPY'),('CUT','RANGE CUT'),('DUP','RANGE DUPLICATE'),('INSERT','RANGE INSERT')]):
-            c.create_text((.271+i*.069)*w,.118*h,text=label,fill=MINT,font=('Segoe UI',7,'bold'))
+        self.draw_soft_labels(w,h)
+    def draw_soft_labels(self,w,h):
+        for i,(label,cmd) in enumerate(self.app.surface_context.keys()):
+            self.canvas.create_text((.271+i*.069)*w,.118*h,text=label,fill=MINT,font=('Segoe UI',7,'bold'))
     def poll(self):
         if not self.win.winfo_exists():return
+        self.page.set(self.app.surface_context.page)
         pending=getattr(self.app,'hardware_learn',None)
         if pending and pending.get('batch') and self.selected!=pending['control']:self.select(pending['control'])
         learned=getattr(self.app,'last_hardware_learn',None)

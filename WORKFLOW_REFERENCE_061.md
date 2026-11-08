@@ -20,3 +20,11 @@ The manuals document operation, not the USB display/LED protocol. No fabricated 
 ## Remaining parity work
 
 This build does not implement the full Maschine hierarchy/scene engine, current note-probability/Euclidean/random-generation features, full plug-in hosting, or every MPC arrangement operation. Those are separate engine/integration tasks; they are not presented as working controls. Proprietary software, firmware and factory graphical assets are not copied.
+
+## Native hardware integration research
+
+An independent native-service/USB project, Encdr, documents a possible Studio display/input path: https://github.com/RufusIbiza/Encdr . Its code and binaries are not included in this build. The controller still uses the MIDI backend; no native screen/LED verification is claimed.
+
+## Own sound and FX state
+
+Arrange/Sound/Browse/FX are shared software contexts, rather than independent mock screens. The eight soft keys and encoders can be learned once as contextual SURFACE commands. Our eight stock sound starting points use the existing LABB engine. Four original master-bus processors are implemented, while NI expansion file loading, third-party plug-in hosting, and per-group/per-sound insert routing are not.

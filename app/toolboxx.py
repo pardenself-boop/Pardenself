@@ -5,6 +5,7 @@ from pathlib import Path
 from array import array
 from arranger_core import Arranger
 from arranger_ranges import RangeEditor
+from surface_context import SurfaceContext
 from arrangement_playback import hits_at, advance
 from audio_regions import AudioRegions, regions_starting
 from suite_registry import SUITES, SuiteRouter
@@ -17,11 +18,11 @@ from mix_rack import MixRack, MODULES
 
 C={'bg':'#17151c','panel':'#28212d','cream':'#f3e5c9','mint':'#8ce3c9','orange':'#d7773d','burgundy':'#81374f','purple':'#7043ad','dim':'#a9a0ad'}
 PAGES=['TRACK CITY','CHOP LABB','PAD LABB','INSTRUMENT','MIXER','MIDI MAP']
-COMMANDS=['PLAY/STOP','RECORD','PAGE NEXT','PAGE PREV','BANK NEXT','BANK PREV','JOG +','JOG -','JOG MODE','UNDO','REDO','MODE MRQ','MODE TRK','MODE ARR','LOOP START -','LOOP START +','LOOP END -','LOOP END +','LOOP MOVE -','LOOP MOVE +','COPY','PASTE','PASTE MERGE','SPLIT','JOG CLICK','JOG BACK','JOG SHIFT','HW JOG +','HW JOG -','SUITE NEXT','SUITE PREV','SUITE CLICK','SUITE BROWSER','TRACK MUTE','TRACK SOLO','LABB NEXT','LABB PREV','LABB PLAY','LABB BROWSER','LABB ARM','LABB NOTE +','LABB NOTE -','LABB NOTE PLAY','LABB CLIP']+[f'EDIT:{op}' for op in ('SELECT','MOVE','TRACK MOVE','TRIM LEFT','TRIM RIGHT','SLIP','MARQUEE','LOOP START','LOOP END','LOOP MOVE')]+[f'PAD {i+1}' for i in range(32)]+[f'BANK PAD {i+1}' for i in range(16)]+['RANGE COPY','RANGE CUT','RANGE PASTE','RANGE DELETE','RANGE DUPLICATE','RANGE INSERT','LOOP TOGGLE','LOOP ALL','LOOP FOCUS','RESTART']
+COMMANDS=['PLAY/STOP','RECORD','PAGE NEXT','PAGE PREV','BANK NEXT','BANK PREV','JOG +','JOG -','JOG MODE','UNDO','REDO','MODE MRQ','MODE TRK','MODE ARR','LOOP START -','LOOP START +','LOOP END -','LOOP END +','LOOP MOVE -','LOOP MOVE +','COPY','PASTE','PASTE MERGE','SPLIT','JOG CLICK','JOG BACK','JOG SHIFT','HW JOG +','HW JOG -','SUITE NEXT','SUITE PREV','SUITE CLICK','SUITE BROWSER','TRACK MUTE','TRACK SOLO','LABB NEXT','LABB PREV','LABB PLAY','LABB BROWSER','LABB ARM','LABB NOTE +','LABB NOTE -','LABB NOTE PLAY','LABB CLIP']+[f'EDIT:{op}' for op in ('SELECT','MOVE','TRACK MOVE','TRIM LEFT','TRIM RIGHT','SLIP','MARQUEE','LOOP START','LOOP END','LOOP MOVE')]+[f'PAD {i+1}' for i in range(32)]+[f'BANK PAD {i+1}' for i in range(16)]+['RANGE COPY','RANGE CUT','RANGE PASTE','RANGE DELETE','RANGE DUPLICATE','RANGE INSERT','LOOP TOGGLE','LOOP ALL','LOOP FOCUS','RESTART','BROWSE SOUNDS','EDIT SOUND','EDIT FX','SOUND PREV','SOUND NEXT','FX PREV','FX NEXT','FX BYPASS']+[f'SURFACE {page}' for page in SurfaceContext.PAGES]+[f'SURFACE KEY {i}' for i in range(1,9)]+[f'SURFACE KNOB {i} +' for i in range(1,9)]
 
 class Engine:
  def __init__(self):
-  self.labbs=LabbEngine();self.samples=[None]*32;self.sample_paths=[None]*32;self.regions=AudioRegions();self.voices=[];self.lock=threading.RLock();self.sr=48000;self.stream=None;self.audio_status='Audio stopped';self.on_message=lambda m:None
+  self.labbs=LabbEngine();self.mix_rack=MixRack();self.samples=[None]*32;self.sample_paths=[None]*32;self.regions=AudioRegions();self.voices=[];self.lock=threading.RLock();self.sr=48000;self.stream=None;self.audio_status='Audio stopped';self.on_message=lambda m:None
  def load(self,index,path):
   if not 0 <= index < len(self.samples):raise ValueError("Pad index must be 0–31")
   with wave.open(path,'rb') as w:
@@ -60,6 +61,7 @@ class Engine:
    out=[a+b for a,b in zip(out,regions)]
    instruments=self.labbs.render_raw(frames)
    out=[a+b for a,b in zip(out,instruments)]
+   out=self.mix_rack.process(out,self.sr)
   return self.labbs.master.process(out)
  def start(self,device=None):
   """Start a stream, releasing partially opened devices after failures."""
@@ -104,8 +106,8 @@ from hardware_edit import HardwareEdit
 class App:
  def __init__(self,root):
   self.root=root;root.title('BOOM BAP TOOLBOXX | COOK UP v1.4');root.geometry('1250x830');root.configure(bg=C['bg'])
-  self.suites=SuiteRouter();self.engine=Engine();self.labbs=self.engine.labbs;self.notes=NoteLane();self.note_pitch=48;self.page=0;self.bank=0;self.selected_pad=0;self.playing=False;self.recording=False;self.bpm=84;self.step=0;self.jog_mode=0;self.jog_modes=['PLAYHEAD','SCROLL','ZOOM','CLIP MOVE','CLIP LENGTH','SLICE','LOOP START','LOOP END','LOOP MOVE'];self.playhead=0;self.zoom=1;self.clips=[{'track':0,'start':0,'length':4,'name':'DRUM A'},{'track':1,'start':4,'length':4,'name':'CHOP B'},{'track':2,'start':0,'length':8,'name':'BASS A'}];self.selected_clip=0;self.arr=Arranger();self.range_editor=RangeEditor(self.arr);self.hardware_edit=HardwareEdit(self);self.clips=self.arr.clips;self.drag=None;self.marquee_start=None
-  self.pattern=[[False]*16 for _ in range(32)];self.patterns={'main':self.pattern};self.mapping={};self.hardware_midi=MidiControlRouter();self.midi_automation=MidiAutomationEngine();self.mix_rack=MixRack();self.learn=None;self.hardware_learn=None;self.last_hardware_learn=None;self.hardware_status='No MIDI input connected';self.midi_connected_name=None;self.midi_port=None;self.midi_thread=None;self.events=queue.Queue(maxsize=2048);self.midi_dropped=0;self.tick_id=None
+  self.suites=SuiteRouter();self.engine=Engine();self.labbs=self.engine.labbs;self.notes=NoteLane();self.note_pitch=48;self.page=0;self.bank=0;self.selected_pad=0;self.playing=False;self.recording=False;self.bpm=84;self.step=0;self.jog_mode=0;self.jog_modes=['PLAYHEAD','SCROLL','ZOOM','CLIP MOVE','CLIP LENGTH','SLICE','LOOP START','LOOP END','LOOP MOVE'];self.playhead=0;self.zoom=1;self.clips=[{'track':0,'start':0,'length':4,'name':'DRUM A'},{'track':1,'start':4,'length':4,'name':'CHOP B'},{'track':2,'start':0,'length':8,'name':'BASS A'}];self.selected_clip=0;self.arr=Arranger();self.range_editor=RangeEditor(self.arr);self.hardware_edit=HardwareEdit(self);self.surface_context=SurfaceContext(self);self.clips=self.arr.clips;self.drag=None;self.marquee_start=None
+  self.pattern=[[False]*16 for _ in range(32)];self.patterns={'main':self.pattern};self.mapping={};self.hardware_midi=MidiControlRouter();self.midi_automation=MidiAutomationEngine();self.mix_rack=self.engine.mix_rack;self.learn=None;self.hardware_learn=None;self.last_hardware_learn=None;self.hardware_status='No MIDI input connected';self.midi_connected_name=None;self.midi_port=None;self.midi_thread=None;self.events=queue.Queue(maxsize=2048);self.midi_dropped=0;self.tick_id=None
   self.street_dispatch=StreetMidiDispatch(self.hardware_midi,self.midi_automation,self.command,self._midi_note_on,self._midi_note_off,self.apply_midi_mix_changes)
   self._style();self._layout();self._refresh();self.root.after(40,self._poll)
   root.protocol('WM_DELETE_WINDOW',self.close)
@@ -214,9 +216,19 @@ class App:
   if hasattr(self,'controller_map_window') and self.controller_map_window.win.winfo_exists():self.controller_map_window.win.lift()
   else:self.controller_map_window=ControllerMapWindow(self)
  def open_mix_rack(self):
+  self.surface_context.set_page('FX')
   from mix_rack_window import MixRackWindow
   if hasattr(self,'mix_rack_window') and self.mix_rack_window.win.winfo_exists():self.mix_rack_window.win.lift()
   else:self.mix_rack_window=MixRackWindow(self)
+ def open_sound_browser(self,page='SOUND'):
+  from sound_browser_window import SoundBrowserWindow
+  self.surface_context.set_page(page)
+  if hasattr(self,'sound_browser_window') and self.sound_browser_window.win.winfo_exists():self.sound_browser_window.win.lift();self.sound_browser_window.refresh()
+  else:self.sound_browser_window=SoundBrowserWindow(self)
+ def sync_fx_window(self):
+  if hasattr(self,'mix_rack_window') and self.mix_rack_window.win.winfo_exists():self.mix_rack_window.refresh()
+ def set_mix_rack(self,rack):
+  with self.engine.lock:self.engine.mix_rack=rack;self.mix_rack=rack
  def apply_midi_mix_changes(self, changes):
   """Normalized MIDI targets use mix.<index>.<parameter>; ignore unrelated targets."""
   for parameter,value,_ in changes:
@@ -296,6 +308,19 @@ class App:
  def command(self,name):
   if name.startswith('BANK PAD '):self.pad(int(name[9:])-1)
   elif name.startswith('PAD '):self.trigger_absolute_pad(int(name[4:])-1)
+  elif name.startswith('SURFACE KEY '):self.surface_context.key(int(name.split()[-1])-1)
+  elif name.startswith('SURFACE KNOB '):
+   parts=name.split();self.surface_context.knob(int(parts[2])-1,1 if parts[3]=='+' else -1)
+  elif name.startswith('SURFACE '):self.surface_context.set_page(name[8:]);self._refresh()
+  elif name in ('BROWSE SOUNDS','EDIT SOUND'):self.open_sound_browser('BROWSE' if name=='BROWSE SOUNDS' else 'SOUND')
+  elif name=='EDIT FX':self.open_mix_rack()
+  elif name in ('SOUND PREV','SOUND NEXT'):self.surface_context.choose_sound(-1 if name.endswith('PREV') else 1)
+  elif name.startswith('FX ADD '):self.mix_rack.add(name[7:]);self.surface_context.fx_index=len(self.mix_rack.modules)-1;self.sync_fx_window();self._refresh()
+  elif name in ('FX PREV','FX NEXT'):
+   if self.mix_rack.modules:self.surface_context.fx_index=(self.surface_context.fx_index+(-1 if name.endswith('PREV') else 1))%len(self.mix_rack.modules)
+  elif name=='FX BYPASS':
+   if self.mix_rack.modules:
+    i=self.surface_context.fx_index%len(self.mix_rack.modules);self.mix_rack.bypass(i,self.mix_rack.modules[i].enabled);self.sync_fx_window()
   elif name.startswith('RANGE '):self.range_command(name[6:])
   elif name=='RESTART':self.playhead=0.;self.step=0;self._refresh()
   elif name=='LOOP TOGGLE':self.arr.loop_enabled=not self.arr.loop_enabled;self._refresh()
@@ -646,7 +671,8 @@ class App:
   if not path:return
   try:
    from project_io import load_project
-   legacy=load_project(self,path);self._refresh()
+   legacy=load_project(self,path);self._refresh();self.sync_fx_window()
+   if hasattr(self,'sound_browser_window') and self.sound_browser_window.win.winfo_exists():self.sound_browser_window.refresh()
    if hasattr(self,'cookup_window') and self.cookup_window.win.winfo_exists():self.cookup_window.refresh()
    self.status.config(text='Loaded project'+('; legacy file has no saved pad audio paths' if legacy else ' and audio sources'))
   except Exception as exc:messagebox.showerror('Project load',str(exc))

@@ -35,7 +35,7 @@ class CookUpWindow:
   for label,cmd in [('▶ PLAY/PAUSE','PLAY/STOP'),('● REC','RECORD')]:
    self.button(h,label,lambda c=cmd:self.act(c),ORANGE if label.startswith('▶') else PANEL2).pack(side='left',padx=3)
   self.tempo_label=self.txt(h,'',10,CREAM,True);self.tempo_label.pack(side='left',padx=7)
-  for t,f in [('SAVE',self.app.save),('LOAD',self.app.load),('STUDIO',self.app.open_studio),('STUDIO MAP',self.app.open_dual_screen),('MIX RACK',self.app.open_mix_rack),('MENU',self.open_feature_menu),('DAW',self.app.root.lift)]:self.button(h,t,f).pack(side='right',padx=3)
+  for t,f in [('SAVE',self.app.save),('LOAD',self.app.load),('SOUNDS',self.app.open_sound_browser),('STUDIO MAP',self.app.open_dual_screen),('MIX RACK',self.app.open_mix_rack),('MENU',self.open_feature_menu),('DAW',self.app.root.lift)]:self.button(h,t,f).pack(side='right',padx=3)
   self.art=tk.Canvas(self.win,height=76,bg=BG,highlightthickness=0);self.art.pack(fill='x',padx=10,pady=(5,2));self.art.bind('<Configure>',self.draw_banner)
   mid=tk.Frame(self.win,bg=BG);mid.pack(fill='both',expand=True,padx=8,pady=3)
   self.main_columns=mid
@@ -76,7 +76,7 @@ class CookUpWindow:
    if t in ('MRQ','TRK','ARR'):self.mode_buttons[t]=button
   self.button(transport,'RANGE ▾',lambda:self.loop_tools(),BURG).pack(side='left',padx=2,pady=4)
   self.grid_section(center,9,'DEVICE CHAIN  /  ROUTING PREVIEW',MINT)
-  self.devices=tk.Canvas(center,height=75,bg=PANEL2,highlightthickness=0);self.devices.grid(row=10,column=0,sticky='nsew');self.devices.bind('<Configure>',lambda e:self.draw_devices())
+  self.devices=tk.Canvas(center,height=75,bg=PANEL2,highlightthickness=0);self.devices.grid(row=10,column=0,sticky='nsew');self.devices.bind('<Configure>',lambda e:self.draw_devices());self.devices.bind('<Button-1>',self.device_click)
   self.center_panel=center
   right=tk.Frame(mid,bg=PANEL,width=215);right.pack(side='right',fill='y',padx=(7,0));right.pack_propagate(False)
   self.right_sidebar=right
@@ -85,9 +85,9 @@ class CookUpWindow:
   self.knob=tk.Scale(right,from_=0,to=100,orient='horizontal',bg=PANEL,fg=CREAM,highlightthickness=0,troughcolor=BURG,length=185,command=self.knob_changed,label='Macro value')
   self.knob.pack(pady=5)
   self.txt(right,'SOUL changes filter character.\nOther orbs save macro values.',9,DIM).pack(pady=5)
-  self.txt(right,'FX RACK  /  PREVIEW',12,ORANGE,True).pack(pady=(18,7))
+  self.txt(right,'STREET FX  /  LIVE + PREVIEW',12,ORANGE,True).pack(pady=(18,7))
   for i,n in enumerate(['EQ','COMP','SAT','TAPE','LO-FI','REVERB','DELAY']):self.button(right,n,lambda n=n:self.fx_info(n),BURG if i%2 else '#38243d').pack(fill='x',padx=10,pady=2)
-  self.fx_status=self.txt(right,'FX slots are not DSP yet',9,DIM);self.fx_status.pack(pady=10)
+  self.fx_status=self.txt(right,'Preview slots • use MIX RACK for live FX',9,DIM);self.fx_status.pack(pady=10)
   self.txt(right,'MASTER OUTPUT',12,MINT,True).pack(pady=(17,4))
   self.master=tk.Canvas(right,height=110,bg=PANEL2,highlightthickness=0);self.master.pack(fill='x',padx=10)
   self.feature_visibility={}
@@ -165,6 +165,7 @@ class CookUpWindow:
   for label in ['STREET LINK / Controller Focus [PLANNED]','MOTION TRACKS / Automation Lanes [PLANNED]','CREW LINK / Controller Groups [PLANNED]']:
    fender.add_command(label=label,state='disabled')
   menu.add_cascade(label='ADVANCED / STUDIO WORKFLOW',menu=fender)
+  menu.add_command(label='Studio command simulator',command=self.app.open_studio)
   menu.add_separator()
   menu.add_command(label='Show all workspace panels',command=self.show_all_panels)
   menu.add_command(label='Reset workspace visibility',command=self.show_all_panels)
@@ -386,13 +387,22 @@ class CookUpWindow:
   from tkinter import messagebox
   messagebox.showinfo('TOOLBOXX / LOGITECH MOUSE',
    'Universal Logitech / trackball profile\n\nLeft click: select clip / ruler seek\nMiddle drag: pan ONLY\nWheel: horizontal timeline scroll\nAlt + wheel: pointer-centered zoom\nCtrl + Z: undo\n\nMouse side buttons and model-specific remapping require device identification and driver/OS integration. No Logitech driver is included.',parent=self.win)
+ def device_click(self,event):
+  modules=self.app.mix_rack.modules
+  if modules:self.app.surface_context.fx_index=min(len(modules)-1,int(event.x*len(modules)/max(1,self.devices.winfo_width())))
+  self.app.open_mix_rack()
  def draw_devices(self):
-  c=self.devices;c.delete('all');w=max(1,c.winfo_width());h=max(75,c.winfo_height());names=['16-BAND EQ','RED HOOK TAPE','DUSTY TUBE','BROOKLYN IRON','CHORUS','REVERB','COMP'];cw=w/len(names)
-  for i,n in enumerate(names):
-   x=i*cw;c.create_rectangle(x+3,4,x+cw-3,h-5,fill='#2a1c2d',outline=[MINT,ORANGE,PURPLE][i%3],width=1)
-   c.create_text(x+cw/2,15,text=n,fill=CREAM,font=('Segoe UI',8,'bold'))
-   for j in range(3):c.create_oval(x+cw*(.23+j*.25)-5,36,x+cw*(.23+j*.25)+5,46,outline=[MINT,ORANGE,PURPLE][(i+j)%3],width=2)
-   c.create_text(x+cw/2,h-18,text='DSP PLANNED',fill=DIM,font=('Segoe UI',7))
+  from street_fx import NAMES,DSP_KINDS
+  c=self.devices;c.delete('all');w=max(1,c.winfo_width());h=max(60,c.winfo_height());modules=self.app.mix_rack.modules
+  if not modules:
+   c.create_text(15,22,anchor='w',text='STREET FX CHAIN  /  NO INSERTS',fill=MINT,font=('Segoe UI',11,'bold'))
+   c.create_text(15,45,anchor='w',text='Click to add BLOCK EQ · BROWNSTONE COMP · DUST DRIVE · IRON CEILING',fill=DIM,font=('Segoe UI',9));return
+  cw=w/len(modules)
+  for i,module in enumerate(modules):
+   x=i*cw;c.create_rectangle(x+3,4,x+cw-3,h-5,fill=PANEL,outline=MINT if module.enabled else DIM)
+   c.create_text(x+cw/2,17,text=NAMES[module.kind],fill=CREAM,font=('Segoe UI',8,'bold'))
+   label='BYPASSED' if not module.enabled else 'LIVE AUDIO' if module.kind in DSP_KINDS else 'DSP PLANNED'
+   c.create_text(x+cw/2,h-19,text=label,fill=MINT if label=='LIVE AUDIO' else DIM,font=('Segoe UI',8,'bold'))
  def draw_master(self):
   c=self.master;c.delete('all');w=max(1,c.winfo_width());peak=min(1,max(0,self.app.labbs.master.peak))
   c.create_text(8,12,anchor='w',text='SHARED MASTER BUS',fill=CREAM,font=('Segoe UI',9,'bold'))
@@ -402,7 +412,12 @@ class CookUpWindow:
  def load_wav(self):self.app.load_sample();self.refresh()
  def bank(self,i):self.app.set_bank(i);self.app.selected_pad=self.app.bank*16+self.app.selected_pad%16;self.refresh()
  def act(self,command):self.app.command(command);self.refresh()
- def fx_info(self,n):self.fx_status.config(text=n+' • visual slot only')
+ def fx_info(self,n):
+  kind={'EQ':'eq','COMP':'compressor','SAT':'density'}.get(n)
+  if kind is None:self.fx_status.config(text=n+' • planned processor');return
+  modules=self.app.mix_rack.modules;index=next((i for i,module in enumerate(modules) if module.kind==kind),None)
+  if index is None:self.app.mix_rack.add(kind);index=len(modules)-1
+  self.app.surface_context.fx_index=index;self.app.open_mix_rack();self.fx_status.config(text='STREET FX CHAIN • live master-bus audio')
  def refresh(self):
   self.current_suite=self.app.labbs.selected;self.labb_list.selection_clear(0,'end');self.labb_list.selection_set(self.current_suite);self.labb_list.see(self.current_suite)
   l=LABBS[self.current_suite];self.labb_title.config(text=l.name.upper()+'  /  '+l.wave.upper());self.labb_status.config(text='ENGINE  '+l.wave.upper()+'  •  SHARED BUS')
@@ -418,4 +433,4 @@ class CookUpWindow:
    self._pad_view_state=state;self.draw_pad_deck();self.draw_wave();self.draw_banner()
   if self.current_suite!=self.app.labbs.selected:self.refresh()
   self.tempo_label.config(text=f'{self.app.bpm:g} BPM  •  '+('PLAYING' if self.app.playing else 'STOPPED'))
-  self.draw_arrange();self.draw_matrix();self.draw_master();self.win.after(250,self.poll)
+  self.draw_arrange();self.draw_matrix();self.draw_devices();self.draw_master();self.win.after(250,self.poll)

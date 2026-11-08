@@ -50,6 +50,7 @@ def snapshot(app, destination):
                           'root_note': slot[2]} for i, slot in app.labbs.crate.slots.items()],
         'suites': app.suites.serialize(), 'labbs': app.labbs.serialize(),
         'note_lane': app.notes.serialize(),
+        'mix_rack': json.loads(app.engine.mix_rack.to_json()),
         'controller': app.hardware_midi.serialize() if hasattr(app, 'hardware_midi') else None,
     }
 
@@ -145,6 +146,8 @@ def stage_project(source):
         controller = MidiControlRouter()
         controller.deserialize(data['controller'])
     engine = Engine()
+    from mix_rack import MixRack
+    engine.mix_rack=MixRack.from_json(json.dumps(data.get('mix_rack',[]),allow_nan=False))
     engine.labbs.deserialize(data.get('labbs', {}))
     paths = data.get('sample_paths', [None] * 32)
     if not isinstance(paths, list) or len(paths) != 32:
@@ -187,6 +190,8 @@ def load_project(app, source):
         app.engine.samples = staged['engine'].samples
         app.engine.sample_paths = staged['engine'].sample_paths
         app.engine.regions = staged['engine'].regions
+        app.engine.mix_rack=staged['engine'].mix_rack
+        app.mix_rack=app.engine.mix_rack
         app.engine.labbs = staged['engine'].labbs
         app.labbs = app.engine.labbs
         app.arr = staged['arr']

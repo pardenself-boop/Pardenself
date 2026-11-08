@@ -17,10 +17,10 @@ def controls():
         result.append(Control(key,label,(x,y,x+w,y+h),command,encoder))
     soft = [('MRQ','MODE MRQ'),('TRK','MODE TRK'),('ARR','MODE ARR'),('LOOP','LOOP TOGGLE'),
             ('COPY','RANGE COPY'),('CUT','RANGE CUT'),('DUP','RANGE DUPLICATE'),('INSERT','RANGE INSERT')]
-    for i,(label,cmd) in enumerate(soft):add(f'SOFT {i+1}',str(i+1),.245+i*.069,.08,.052,.025,cmd)
+    for i,(label,cmd) in enumerate(soft):add(f'SOFT {i+1}',str(i+1),.245+i*.069,.08,.052,.025,f'SURFACE KEY {i+1}')
     knob = [('LOOP POSITION','LOOP MOVE +'),('FOCUS LOOP','LOOP FOCUS'),('LOOP START','LOOP START +'),('LOOP LENGTH','LOOP END +'),
             ('JOG','HW JOG'),('SELECT','JOG CLICK'),('BACK','JOG BACK'),('PAGE','PAGE NEXT')]
-    for i,(label,cmd) in enumerate(knob):add(f'KNOB {i+1}',str(i+1),.25+i*.069,.36,.04,.055,cmd,True)
+    for i,(label,cmd) in enumerate(knob):add(f'KNOB {i+1}',str(i+1),.25+i*.069,.36,.04,.055,f'SURFACE KNOB {i+1} +',True)
     left=[('CHANNEL','TRACK CITY','MODE TRK'),('PLUGIN','INSTRUMENT','LABB BROWSER'),('ARRANGE','ARRANGE','MODE ARR'),('MIX','MIX','PAGE NEXT'),
           ('BROWSE','BROWSE','SUITE BROWSER'),('SAMPLING','SAMPLING','PAGE PREV'),('NAV LEFT','◀','PAGE PREV'),('NAV RIGHT','▶','PAGE NEXT'),
           ('ALL','ALL','LOOP ALL'),('AUTO','AUTO','LOOP FOCUS')]

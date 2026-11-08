@@ -12,6 +12,10 @@ In Cook Up, drag the loop brace edges or body above Track City. One complete dra
 
 ## Validation and distribution
 
-Local baseline: 111 tests. Current suite: 129 passing tests, covering range scope, region splitting and fades, insertion/undo, editable hotspot bounds, profile persistence, two-direction encoder routing, and staged pad learning with duplicate/cancel handling. Actual Tk checks passed for all three windows and the new mapping/range interactions.
+Local baseline: 111 tests. Current suite: 144 passing tests, covering range scope, region splitting and fades, insertion/undo, editable hotspot bounds, profile persistence, two-direction encoder routing, and staged pad learning with duplicate/cancel handling. Actual Tk checks passed for all three windows and the new mapping/range interactions.
 
 The Windows workflow packages the executable, checks startup including the controller map, compiles Setup.exe, silently installs it, checks installed startup, uninstalls it, and uploads only the single installer. After those gates pass, a release job publishes the verified development installer. Expected artifact: BOOM_BAP_TOOLBOXX_Setup_061.exe. The release is unsigned; local Windows 11 audio and physical controller testing remain necessary.
+
+## Integrated sound and FX workflow
+
+The shared surface context now has Arrange, Sound, Browse and FX pages. Learned SURFACE KEY and SURFACE KNOB commands follow that context. The sound editor browses all 22 LABBs plus eight original NYC starting points and user patch memory. BLOCK EQ, BROWNSTONE COMP, DUST DRIVE and IRON CEILING process real master-bus audio. Chain ordering, bypass, parameters and project recall reach both live rendering and isolated Track City bounce. Per-sound/group insert routing and external VST/NKS hosting remain separate work; other explicitly planned slots still have no DSP.

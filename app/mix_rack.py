@@ -1,6 +1,6 @@
 """Non-destructive TOOLBOXX modular mix-rack state, independent of the UI.
 
-This is configuration and analysis scaffolding, NOT a DSP implementation.
+BLOCK EQ, BROWNSTONE COMP, DUST DRIVE and IRON CEILING have live DSP; other slots remain planned.
 """
 from dataclasses import dataclass, field
 from typing import Dict, List
@@ -38,6 +38,11 @@ class Module:
 class MixRack:
     def __init__(self, modules=None):
         self.modules: List[Module] = list(modules or [])
+        from street_fx import StreetFX
+        self.processor=StreetFX()
+
+    def process(self,samples,sample_rate=48000):
+        return self.processor.process(samples,self.modules,sample_rate)
 
     def add(self, kind):
         module = Module(kind)
