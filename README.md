@@ -1,22 +1,30 @@
-# BOOM BAP TOOLBOXX — Windows v0.5 / Track City Advanced Edit
+# BOOM BAP TOOLBOXX — Build 060
 
-## Launch
-Windows: install Python 3.11+, extract folder, double-click `START_WINDOWS.bat`. First run installs `sounddevice`, `mido`, and `python-rtmidi`. Connect audio output and load a 16-bit PCM WAV sample into a pad. Maschine Studio USB HID/screen output is not yet implemented: virtual screens only.
+Native Windows DAW prototype with Cook Up Matrix, 22 LABBs, a 32-slot sample deck, Track City, and Native Instruments Maschine Studio MIDI setup.
 
-## Track City advanced editing
-- **MRQ**: drag empty arranger space to marquee-select clips. Shift-click toggles selection.
-- **TRK**: clicking a clip selects the clips on that track.
-- **ARR**: click to select, drag the body to move; drag the first/last ~8 pixels to trim. Trim-left adjusts source offset without destructive modification.
-- **Loop brace**: mint horizontal strip at the top of the arrangement. Drag left/right triangular handles to resize; drag the middle to move the loop. Loop playback follows the brace.
-- **Snap**: toggles between 1/16-note equivalent (0.25 beat in the prototype's timeline units) and free movement.
-- **Copy/Paste/Paste Merge**: paste at playhead. Merge is a **container-length union** for same-start/same-track/same-kind clips; it is **not MIDI event merging** yet.
-- **Split**: at playhead, preserves source offsets. Right-click in the arranger splits selected clips at pointer position.
-- **Undo/Redo**: 100 snapshot editing history, Ctrl+Z/Ctrl+Y. Drag gesture is one undo checkpoint.
-- **Jog**: cycle modes including LOOP START, LOOP END and LOOP MOVE. Virtual jog buttons execute the same commands.
-- **Save/Load**: persists loop, edit mode, snap, clips, and mappings. Old v0.4 JSON clips import supported.
+## Windows installer
 
-## Limitations
-This is a Python/Tkinter development prototype, not a finished Windows native compiled DAW. No VST hosting, stems, hardware screens, live waveform/audio-region arrangement, arbitrary MIDI event merge, or ASIO-exclusive routing yet. Clip containers are editable project metadata; only the separate 16-step pad sequencer produces sound. Audio timing is prototype-level Tkinter scheduling. MIDI hardware and audio device behavior must be tested on the user's Windows computer.
+[Download Build 060](https://github.com/pardenself-boop/Pardenself/releases/tag/build-060). Choose **BOOM_BAP_TOOLBOXX_Setup_060.exe**. This single installer includes the app, Python runtime, audio/MIDI libraries and sound-check shortcut. You do not need to install Python or manage source files to run the installed app.
 
-## Run tests
-`python -m unittest -v test_arranger`
+Build 060 is an unsigned development release. Windows 11 audio playback and physical Maschine Studio operation still need testing on the target PC. Native Studio HID, screens/LEDs, a VST build, and FX explicitly marked as previews are not implemented.
+
+## Current UI
+
+![Running Cook Up Matrix interface](validation/cookup-ui059.png)
+
+## Controller workflow
+
+Use **MASCHINE SETUP** to scan/select the Studio's Controller Editor MIDI input, connect, choose a command/mode, and learn a physical control. Use **BANK PAD 1–16** for one physical pad map that follows the DAW bank; **PAD 1–32** remain absolute assignments. Projects save both controller bindings and audio source references.
+
+The Start Menu **STREET SOUND CHECK (Audio + MIDI)** shortcut opens the test window. Close other MIDI clients if the Windows driver only permits one client at a time.
+
+## Source and build evidence
+
+- [Build 060 details](BUILD_060_README.md)
+- [Controller guide](CONTROLLER_MASCHINE_STUDIO.md)
+- [Windows test guide](TEST_AUDIO_MIDI_WINDOWS.md)
+- [Windows CI](https://github.com/pardenself-boop/Pardenself/actions/workflows/windows-installer.yml)
+
+The Windows pipeline runs the unit tests, packages the app, checks packaged startup, compiles Setup.exe, checks installation and installed-app startup, then tests uninstallation. The runner is Windows Server 2022, not a physical Windows 11 workstation. Audio/MIDI events used in automated tests are simulated.
+
+Original uploads are preserved under original_uploads/. Earlier build notes are historical. The detailed decorative artwork in the user's visual reference has not been recreated.

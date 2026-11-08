@@ -1,0 +1,66 @@
+name: Publish verified Build 060 installer
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Windows build run
+        required: true
+        default: '42482676866'
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Verify source run
+        id: source
+        env:
+          BUILD_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          gh api "repos/$GH_REPO/actions/runs/$BUILD_RUN_ID" > run.json
+          python - <<'PY'
+          import json, os
+          run = json.load(open('run.json'))
+          assert run['conclusion'] == 'success', 'Build must have passed'
+          assert run['head_branch'] == 'main'
+          assert run['head_sha'] == 'e9b094e1713c9111b33eb787c5afdbda73c60c78', 'Unexpected source revision'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('commit=' + run['head_sha'] + '\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: TOOLBOXX-Windows-installer
+          path: installer
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify single executable and publish development installer
+        env:
+          BUILD_COMMIT: ${{ steps.source.outputs.commit }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          files = list(Path('installer').iterdir())
+          assert [p.name for p in files] == ['BOOM_BAP_TOOLBOXX_Setup_060.exe']
+          data = files[0].read_bytes()
+          assert data[:2] == b'MZ'
+          digest = hashlib.sha256(data).hexdigest()
+          assert digest == 'aa84bd788fa1517f952d6633cec77cd756b69baff24c6a8d2899e4b0123066c8'
+          Path('notes.md').write_text('''Windows x64 development installer for BOOM BAP TOOLBOXX Build 060.
+
+          Download and run BOOM_BAP_TOOLBOXX_Setup_060.exe. This single installer includes the app, Python runtime, audio/MIDI libraries, and a Start Menu sound-check shortcut. No separate Python installation or source-file setup is needed.
+
+          The Windows pipeline passed 111 tests, packaged-app startup, installer compilation, installation, installed-app startup, and uninstallation on Windows Server 2022. Physical Windows 11 audio playback and Maschine Studio still need testing on the target PC.
+
+          Includes Cook Up Matrix, 22 LABBs, 32 sample slots, Track City, project audio-source recall, and Maschine Studio MIDI learn with bank-aware pads. This is an unsigned development release. Native Studio HID/screens/LED feedback, VST packaging, and FX explicitly marked as previews are not implemented. The detailed decorative artwork in the visual reference has not been recreated.
+
+          Successful Windows build: https://github.com/pardenself-boop/Pardenself/actions/runs/42482676866
+
+          SHA256: aa84bd788fa1517f952d6633cec77cd756b69baff24c6a8d2899e4b0123066c8
+          ''')
+          PY
+          gh release create build-060 installer/BOOM_BAP_TOOLBOXX_Setup_060.exe --target "$BUILD_COMMIT" --title 'TOOLBOXX Build 060 - Windows installer' --notes-file notes.md --prerelease
