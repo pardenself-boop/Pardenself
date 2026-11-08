@@ -1,0 +1,41 @@
+{
+  "build": "062",
+  "version": "0.62.0",
+  "source_commit": "c4358d1b119d0536a9f5d7a86742f65871e267d2",
+  "workflow_run": 42512581136,
+  "workflow_url": "https://github.com/pardenself-boop/Pardenself/actions/runs/42512581136",
+  "runner": "windows-2022 (Windows Server 2022, not Windows 11)",
+  "tests": 162,
+  "checks": {
+    "unit_tests": "passed",
+    "source_preflight": "passed",
+    "packaged_startup": "passed",
+    "installer_compile": "passed",
+    "silent_install": "passed",
+    "installed_startup": "passed",
+    "normal_installed_launch": "passed",
+    "one_visible_cookup_window": "passed",
+    "build_title": "passed",
+    "normal_close": "passed",
+    "uninstall": "passed"
+  },
+  "installer": "BOOM_BAP_TOOLBOXX_Setup_062.exe",
+  "bytes": 28782801,
+  "sha256": "4088889f6bbae2951d3989fb468135397cbfb491277a89234cd82855fb928824",
+  "download": "https://github.com/pardenself-boop/Pardenself/releases/download/build-062/BOOM_BAP_TOOLBOXX_Setup_062.exe",
+  "downloaded_and_hash_verified": true,
+  "signature": "unsigned; no signing identity configured",
+  "screenshot": {
+    "artifact": "TOOLBOXX-build-diagnostics",
+    "path": "validation/windows-installed-ui.png",
+    "artifact_id": 13629774157,
+    "captured_on_windows": true,
+    "locally_viewed": false,
+    "note": "Diagnostic artifact download returned Forbidden in this environment. Capture and normal launch checks passed on the Windows runner."
+  },
+  "hardware": {
+    "windows11_audio": "unverified",
+    "maschine_studio_midi": "unverified on physical hardware",
+    "physical_screens_leds": "not implemented"
+  }
+}
