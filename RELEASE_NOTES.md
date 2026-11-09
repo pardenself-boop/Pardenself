@@ -1,14 +1,16 @@
-# TOOLBOXX Build 066 — recording timing, UI preserved
+# TOOLBOXX Build 067 — MIDI reliability, same UI
 
-Use the existing **MENU → CHECK FOR UPDATES…** or install BOOM_BAP_TOOLBOXX_Setup_066.exe over your current installation.
+Use the existing **MENU → CHECK FOR UPDATES…** or install BOOM_BAP_TOOLBOXX_Setup_067.exe over your current installation. **The locked UI is unchanged.**
 
-**The current UI is locked and preserved: no new panels, buttons, menu items, layout, color or artwork changes. The Cook Up UI source is identical to Build 065.**
+- Held instrument notes retain their original MIDI channel and instrument owner. Releasing after changing the selected/armed instrument targets the original sound. Sustain release uses the same ownership. An untracked note-off no longer cuts a mouse/sequencer note simply because its pitch matches.
+- Same-pitch notes on different instruments/channels release independently. When channels share the same instrument and pitch, the current synth releases the shared pitch only after its final channel owner releases; individual unison voices are not separately addressed.
+- Full input queues request recovery on the GUI thread: discard the stale backlog, release tracked held notes and report overload. The driver callback stays nonblocking and does not call Tk or the synth. Some performance events are intentionally lost during overload; reduce the controller message rate.
+- Incoming messages are snapshotted before queueing. Connection generations reject queued or late callbacks from a closed/failed connection after reconnecting or shutting down.
+- One bad mapped command cannot abort the remainder of an input batch and swallow a later note-off. Invalid note/CC values are rejected before legacy learn/command execution.
+- Standard MIDI channel panic CC120/123 is handled before legacy command mappings, so a mapping cannot swallow an emergency note release.
+- Relearning a held note as a mapped button, including a legacy mapping, still allows its original voice to release.
+- A port explicitly marked closed by its MIDI backend is disconnected and tracked notes are released. A manual SCAN also closes a connected port missing from the returned input list. Playback/audio are not stopped. Reconnect through the existing controls; this is not automatic USB hot-plug recovery.
 
-- Adds optional original synthesized quarter-note monitor clicks and a four-beat recording count-in through the existing MIDI-learn system. Choose METRONOME TOGGLE or COUNT IN TOGGLE from the existing hardware setup command list and teach spare controller buttons. Neither is enabled by default.
-- Starting playback with REC armed and count-in enabled holds the song position for one bar. Pads/instruments can audition during the lead-in without writing notes; recording begins after the full bar. Ordinary playback without REC is not delayed. Stop, disarm or disable count-in to cancel it.
-- The monitor click is mixed after master FX and before master gain/safety. WAV bounce excludes it and leaves the live click voices alone. Project preferences persist; active countdown/click voices are never restored on load.
-- Transport timers use monotonic deadlines so redraw work does not accumulate into each tick interval. A long stall resets the deadline instead of creating a burst of catch-up callbacks. This remains the existing GUI transport, not a new sample-accurate clock.
+230 automated tests pass locally, including simulated overload/disconnect/context-switch cases with the actual synth. Native Tk checks verify a non-silent rendered note and its release after overload while the UI stays unchanged. Windows publication requires upgrade from Build 066, user-file preservation, installed startup, normal launch/close and uninstall checks.
 
-214 automated tests pass locally. Native Tk checks cover count-in gating, the recording transition and stopping, with UI sources unchanged. Windows publication requires upgrade from Build 065, user-file preservation, installed startup, normal launch/close and uninstall checks.
-
-This is an unsigned development build. Real Windows 11 audio/controller timing still needs testing. Physical Studio screens/LEDs and other documented unfinished features remain separate. Project saves continue to use v3 from Build 065.
+The installer is unsigned. Real Windows 11 audio and physical Maschine Studio behavior remain unverified. Physical Studio screens/LEDs and other documented unfinished features remain separate. Project format remains v3; controller profiles remain compatible.

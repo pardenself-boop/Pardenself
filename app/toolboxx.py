@@ -1,5 +1,5 @@
 """BOOM BAP TOOLBOXX v0.4 - Windows prototype, virtual Maschine Studio + sampler."""
-import json, math, queue, threading, time, wave, tkinter as tk
+import copy, json, math, queue, threading, time, wave, tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
 from array import array
@@ -19,6 +19,7 @@ from mix_rack import MixRack, MODULES
 from ui_shortcuts import dispatch_shortcut
 from midi_activity import MidiActivity
 from metronome import Metronome
+from street_midi_queue import MidiPacket
 
 C={'bg':'#17151c','panel':'#28212d','cream':'#f3e5c9','mint':'#8ce3c9','orange':'#d7773d','burgundy':'#81374f','purple':'#7043ad','dim':'#a9a0ad'}
 PAGES=['TRACK CITY','CHOP LABB','PAD LABB','INSTRUMENT','MIXER','MIDI MAP']
@@ -128,7 +129,8 @@ class App:
   self.midi_activity=MidiActivity()
   self.pad_takes=PadTakes();self._tick_started=None;self._tick_beat=0.;self._pad_skip_once={}
   self.metronome_enabled=False;self.count_in_enabled=False;self._count_in_remaining=0;self._count_in_active=False
-  self.street_dispatch=StreetMidiDispatch(self.hardware_midi,self.midi_automation,self.command,self._midi_note_on,self._midi_note_off,self.apply_midi_mix_changes,pad_command=self._midi_pad_command)
+  self._midi_note_owners={};self._midi_generation=0;self._midi_overflow=threading.Event()
+  self.street_dispatch=StreetMidiDispatch(self.hardware_midi,self.midi_automation,self.command,self._midi_note_on,self._midi_note_off,self.apply_midi_mix_changes,pad_command=self._midi_pad_command,channel_aware=True)
   self._style();self._layout();self._refresh();self.root.after(40,self._poll)
   root.protocol('WM_DELETE_WINDOW',self.close)
  def open_hardware_setup(self):
@@ -594,6 +596,7 @@ class App:
   try:
    import mido
    names=list(mido.get_input_names());self.midi_device['values']=names
+   if self.midi_port is not None and self.midi_connected_name and self.midi_connected_name not in names:self.close_midi()
    if selected in names:self.midi_device.set(selected)
    elif names:
     preferred=next((name for name in names if 'maschine' in name.casefold() and 'studio' in name.casefold()),names[0]);self.midi_device.set(preferred)
@@ -605,11 +608,13 @@ class App:
    self.midi_device['values']=[];self.midi_device.set('');self.hardware_status='MIDI backend unavailable: '+str(exc);self.status.config(text=self.hardware_status)
    return []
  def close_midi(self):
+  self._midi_generation=getattr(self,'_midi_generation',0)+1
   port=self.midi_port;self.midi_port=None;self.midi_connected_name=None
   try:
    if port is not None:port.close()
   finally:
-   self.street_dispatch.panic();self._drain_midi(2048)
+   self.street_dispatch.panic();self.release_midi_notes();self._drain_midi(2048)
+   if hasattr(self,'_midi_overflow'):self._midi_overflow.clear()
    self.hardware_learn=None;self.hardware_status='MIDI disconnected';self.status.config(text=self.hardware_status)
  def open_midi(self):
   name=self.midi_device.get()
@@ -618,10 +623,12 @@ class App:
   try:
    import mido
    self.close_midi()
-   self.midi_port=mido.open_input(name,callback=self._enqueue_midi);self.midi_connected_name=name
+   generation=self._midi_generation
+   self.midi_port=mido.open_input(name,callback=lambda message:self._enqueue_midi(message,generation));self.midi_connected_name=name
    self.hardware_status='MIDI connected: '+name;self.status.config(text=self.hardware_status)
    return True
   except Exception as exc:
+   self._midi_generation=getattr(self,'_midi_generation',0)+1
    self.midi_port=None;self.hardware_status='MIDI connection failed: '+str(exc);self.status.config(text=self.hardware_status)
    messagebox.showerror('MIDI',self.hardware_status);return False
  def arm_hardware_learn(self,command,mode,control=None):
@@ -670,10 +677,16 @@ class App:
   self.hardware_status=f"LEARNED {kind}:{channel}:{number} → {pending['command']} ({pending['mode']})"
   self.status.config(text=self.hardware_status)
   return True
- def _enqueue_midi(self,message):
+ def _enqueue_midi(self,message,generation=None):
   """Nonblocking hardware callback: never stall the MIDI driver thread."""
-  try:self.events.put_nowait(message)
-  except queue.Full:self.midi_dropped+=1
+  if getattr(self,'_closing',False) or (generation is not None and generation!=getattr(self,'_midi_generation',0)):return
+  event=message.copy() if callable(getattr(message,'copy',None)) else copy.copy(message)
+  if generation is not None:event=MidiPacket(generation,event)
+  try:self.events.put_nowait(event)
+  except queue.Full:
+   self.midi_dropped+=1
+   if not hasattr(self,'_midi_overflow'):self._midi_overflow=threading.Event()
+   self._midi_overflow.set()
  def _drain_midi(self,limit=256):
   """Bound main-thread work so a MIDI flood cannot freeze Tk's event loop."""
   messages=[]
@@ -682,37 +695,64 @@ class App:
    except queue.Empty:break
   return messages
  def arm_learn(self):self.hardware_learn=None;self.learn=self.midi_cmd.get();self.status.config(text='MIDI LEARN armed for '+self.learn)
- def _midi_note_on(self,note,velocity):
+ def _midi_note_on(self,note,velocity,channel=0):
+  self._midi_note_off(note,channel)
   if any(c['id'] in self.arr.selected and c.get('kind')=='labb' for c in self.arr.clips):
-   self.labbs.note_on(note,velocity,self.notes.armed_labb)
+   instrument=self.notes.armed_labb
+   self.labbs.note_on(note,velocity,instrument)
+   if not hasattr(self,'_midi_note_owners'):self._midi_note_owners={}
+   self._midi_note_owners[(channel,note)]=instrument
    if self.recording and not getattr(self,'_count_in_active',False):
     focused=next((c for c in self.arr.clips if c['id'] in self.arr.selected and c.get('kind')=='labb'),None)
     if focused:self.notes.add(focused.get('note_pattern','labb-main'),(self.playhead-focused['start']+focused.get('offset',0))%4,note,velocity)
   elif 36 <= note <= 67:self.trigger_absolute_pad(note-36,velocity)
  def _midi_pad_command(self,command,velocity):
   self.command(command,velocity=velocity)
- def _midi_note_off(self,note):
-  self.labbs.note_off(note,self.notes.armed_labb)
+ def _midi_note_off(self,note,channel=0):
+  owners=getattr(self,'_midi_note_owners',{})
+  instrument=owners.pop((channel,note),None)
+  if instrument is not None and not any(pitch==note and owner==instrument for (_,pitch),owner in owners.items()):self.labbs.note_off(note,instrument)
+ def release_midi_notes(self):
+  for channel,note in list(getattr(self,'_midi_note_owners',{})):self._midi_note_off(note,channel)
+ def dispatch_midi_input(self,m):
+  if isinstance(m,MidiPacket):
+   if m.generation!=getattr(self,'_midi_generation',0):return
+   m=m.message
+  typ=getattr(m,'type',None)
+  if typ not in ('note_on','note_off','control_change'):return
+  channel=getattr(m,'channel',None)
+  number=getattr(m,'control' if typ=='control_change' else 'note',None)
+  value=getattr(m,'value' if typ=='control_change' else 'velocity',None)
+  if type(channel) is not int or not 0<=channel<=15 or any(type(v) is not int or not 0<=v<=127 for v in (number,value)):return
+  if hasattr(self,'midi_activity'):self.midi_activity.record(m)
+  if typ=='control_change' and number in (120,123):
+   self.street_dispatch.receive(self.midi_device.get() or 'unknown',m,position=self.playhead,playing=self.playing);return
+  if (typ=='note_off' or typ=='note_on' and value==0) and (channel,number) in getattr(self,'_midi_note_owners',{}):
+   self.street_dispatch.receive(self.midi_device.get() or 'unknown',m,position=self.playhead,playing=self.playing);return
+  if self._learn_hardware_message(m):return
+  key=f'{typ}:{channel}:{number}'
+  if self.learn and typ in ('note_on','control_change') and value>0:
+   self.mapping[key]=self.learn;self.status.config(text=f'Learned {key} → {self.learn}');self.learn=None;return
+  if key in self.mapping and typ in ('note_on','control_change'):
+   if value>0:
+    action=self.mapping[key]
+    if typ=='note_on' and action.startswith(('PAD ','BANK PAD ')):self._midi_pad_command(action,value/127.)
+    else:self.command(action)
+   return
+  if typ=='note_off' and f'note_on:{channel}:{number}' in self.mapping:return
+  self.street_dispatch.receive(self.midi_device.get() or 'unknown',m,position=self.playhead,playing=self.playing)
  def _poll(self):
   try:
+   port=getattr(self,'midi_port',None)
+   if port is not None and getattr(port,'closed',False) is True:
+    self.close_midi();self.hardware_status='MIDI input closed; reconnect your controller when ready.';self.status.config(text=self.hardware_status)
+   overflow=getattr(self,'_midi_overflow',None)
+   if overflow is not None and overflow.is_set():
+    overflow.clear();self._drain_midi(2048);self.street_dispatch.panic();self.release_midi_notes()
+    self.hardware_status='MIDI overload recovered; held notes released. Reduce controller message rate.'
    for m in self._drain_midi():
-    if hasattr(self,'midi_activity'):self.midi_activity.record(m)
-    if self._learn_hardware_message(m):continue
-    # Legacy MIDI Learn is deliberately processed before dispatch.
-    kind='note' if m.type in ('note_on','note_off') else 'cc' if m.type=='control_change' else None
-    number=getattr(m,'note',None) if kind=='note' else getattr(m,'control',None)
-    key=f'{m.type}:{getattr(m,"channel",0)}:{number}'
-    if self.learn and m.type in ('note_on','control_change') and getattr(m,'velocity',getattr(m,'value',0))>0:
-     self.mapping[key]=self.learn;self.status.config(text=f'Learned {key} → {self.learn}');self.learn=None
-     continue
-    if key in self.mapping and m.type in ('note_on','control_change'):
-     if getattr(m,'velocity',getattr(m,'value',0))>0:
-      action=self.mapping[key]
-      if m.type=='note_on' and action.startswith(('PAD ','BANK PAD ')):self._midi_pad_command(action,m.velocity/127.)
-      else:self.command(action)
-     continue
-    if m.type=='note_off' and f'note_on:{getattr(m,"channel",0)}:{number}' in self.mapping:continue
-    self.street_dispatch.receive(self.midi_device.get() or 'unknown',m,position=self.playhead,playing=self.playing)
+    try:self.dispatch_midi_input(m)
+    except Exception as exc:self.status.config(text='MIDI message error: '+str(exc))
   except Exception as exc:
    self.status.config(text='MIDI processing error: '+str(exc))
   if self.midi_dropped:

@@ -9,6 +9,13 @@ from threading import Lock
 
 
 @dataclass(frozen=True)
+class MidiPacket:
+    """A callback snapshot tagged with the connection that produced it."""
+    generation: int
+    message: object
+
+
+@dataclass(frozen=True)
 class MidiEvent:
     device: str
     type: str

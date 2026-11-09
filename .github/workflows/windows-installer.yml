@@ -22,14 +22,14 @@ jobs:
       - name: Test, package, verify startup and compile installer
         shell: pwsh
         run: ./BUILD_SETUP_WINDOWS.ps1 -NoOpen
-      - name: Prepare installed Build 065 for upgrade check
+      - name: Prepare installed Build 066 for upgrade check
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $previous = Join-Path $env:RUNNER_TEMP 'TOOLBOXX_Setup_065.exe'
-          curl.exe --fail --location --silent --show-error --retry 3 --retry-delay 3 --retry-all-errors --connect-timeout 15 --max-time 120 --output $previous 'https://github.com/pardenself-boop/Pardenself/releases/download/build-065/BOOM_BAP_TOOLBOXX_Setup_065.exe'
+          $previous = Join-Path $env:RUNNER_TEMP 'TOOLBOXX_Setup_066.exe'
+          curl.exe --fail --location --silent --show-error --retry 3 --retry-delay 3 --retry-all-errors --connect-timeout 15 --max-time 120 --output $previous 'https://github.com/pardenself-boop/Pardenself/releases/download/build-066/BOOM_BAP_TOOLBOXX_Setup_066.exe'
           if ($LASTEXITCODE -ne 0) { throw 'Previous installer download failed after retries' }
-          if ((Get-FileHash $previous -Algorithm SHA256).Hash.ToLowerInvariant() -ne '9be6700b3363b709e2ecdd6d14ae789029d1ed1ddd007c5c81a4157c32bdf5f6') { throw 'Previous installer checksum mismatch' }
+          if ((Get-FileHash $previous -Algorithm SHA256).Hash.ToLowerInvariant() -ne '8b7cd04ddc309b226e5fe8478fb6a5f16f38d3ad1c1bedd434e35a765d2c54ac') { throw 'Previous installer checksum mismatch' }
           $installDir = Join-Path $env:RUNNER_TEMP 'TOOLBOXX-install-check'
           $previousSetup = Start-Process -FilePath $previous -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/DIR="' + $installDir + '"') -Wait -PassThru
           if ($previousSetup.ExitCode -ne 0) { throw 'Previous version installation failed' }

@@ -184,6 +184,8 @@ def load_project(app, source):
     # GUI calls this on its main thread. Staging failures leave playback untouched.
     if hasattr(app, 'street_dispatch'):
         app.street_dispatch.panic()
+    if hasattr(app, 'release_midi_notes'):
+        app.release_midi_notes()
     if hasattr(app, '_drain_midi'):
         app._drain_midi(2048)
     app.hardware_learn = None

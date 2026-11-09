@@ -1,12 +1,12 @@
-# BOOM BAP TOOLBOXX — Build 066
+# BOOM BAP TOOLBOXX — Build 067
 
 Native Windows DAW prototype with Cook Up Matrix, 22 LABBs, a 32-slot sample deck, Track City, our sound banks, real master FX, and Native Instruments Maschine Studio control mapping.
 
 ## Windows installer
 
-[Download Build 066](https://github.com/pardenself-boop/Pardenself/releases/tag/build-066). Choose **BOOM_BAP_TOOLBOXX_Setup_066.exe**. This single installer includes the app, Python runtime, audio/MIDI libraries and sound-check shortcut. You do not need to install Python or manage source files to run the installed app.
+[Download Build 067](https://github.com/pardenself-boop/Pardenself/releases/tag/build-067). Choose **BOOM_BAP_TOOLBOXX_Setup_067.exe**. This single installer includes the app, Python runtime, audio/MIDI libraries and sound-check shortcut. You do not need to install Python or manage source files to run the installed app.
 
-Build 066 is an unsigned development release. Windows 11 audio playback and physical Maschine Studio operation still need testing on the target PC. Native Studio HID, screens/LEDs, a VST build, and FX explicitly marked as previews are not implemented.
+Build 067 is an unsigned development release. Windows 11 audio playback and physical Maschine Studio operation still need testing on the target PC. Native Studio HID, screens/LEDs, a VST build, and FX explicitly marked as previews are not implemented.
 
 ## Updates
 
@@ -36,9 +36,13 @@ The installer opens Cook Up directly, adds a desktop shortcut, and includes the 
 
 The Start Menu **STREET SOUND CHECK (Audio + MIDI)** shortcut opens the test window. Close other MIDI clients if the Windows driver only permits one client at a time.
 
+## MIDI reliability
+
+Held instrument notes keep their original channel/instrument owner when you change selection. Queue overload releases tracked notes and discards stale buffered actions; late callbacks from an old connection are ignored. A malformed mapped command cannot prevent later note releases in the same input batch. Backend-closed inputs, or a connected port missing during a manual SCAN, are disconnected cleanly. Reconnect through the existing controls; no automatic USB reconnect or physical hardware verification is claimed.
+
 ## Source and build evidence
 
-- [Build 066 details](BUILD_066_README.md)
+- [Build 067 details](BUILD_067_README.md)
 - [Workflow references and parity gaps](WORKFLOW_REFERENCE_061.md)
 - [Controller guide](CONTROLLER_MASCHINE_STUDIO.md)
 - [Windows test guide](TEST_AUDIO_MIDI_WINDOWS.md)
