@@ -34,7 +34,8 @@ class CookUpWindow:
   self.txt(h,'SOUND LABB DIVISION  /  COOK UP MATRIX',9,MINT,True).pack(side='left',padx=9)
   # Persistent transport remains visible when browsing instruments.
   for label,cmd in [('▶ PLAY/PAUSE','PLAY/STOP'),('● REC','RECORD')]:
-   self.button(h,label,lambda c=cmd:self.act(c),ORANGE if label.startswith('▶') else PANEL2).pack(side='left',padx=3)
+   button=self.button(h,label,lambda c=cmd:self.act(c),ORANGE if label.startswith('▶') else PANEL2);button.pack(side='left',padx=3)
+   if cmd=='RECORD':self.rec_button=button
   self.tempo_label=self.txt(h,'',10,CREAM,True);self.tempo_label.pack(side='left',padx=7)
   for t,f in [('SAVE',self.app.save),('LOAD',self.app.load),('SOUNDS',self.app.open_sound_browser),('STUDIO MAP',self.app.open_dual_screen),('MIX RACK',self.app.open_mix_rack),('MENU',self.open_feature_menu),('DAW',self.app.show_workstation)]:self.button(h,t,f).pack(side='right',padx=3)
   self.art=tk.Canvas(self.win,height=76,bg=BG,highlightthickness=0);self.art.pack(fill='x',padx=10,pady=(5,2));self.art.bind('<Configure>',self.draw_banner)
@@ -126,6 +127,8 @@ class CookUpWindow:
   menu=tk.Menu(self.win,tearoff=False,bg=PANEL,fg=CREAM,activebackground=BURG,activeforeground=CREAM)
   menu.add_command(label='AUDIO + MIDI SETUP…',command=self.app.open_audio_midi)
   menu.add_command(label='CHECK FOR UPDATES…',command=self.app.open_updates)
+  menu.add_command(label='UNDO LAST PAD TAKE',command=lambda:self.act('TAKE UNDO'))
+  menu.add_command(label='REDO LAST PAD TAKE',command=lambda:self.act('TAKE REDO'))
   menu.add_separator()
   for group,labels in FEATURES.items():
    sub=tk.Menu(menu,tearoff=False,bg=PANEL,fg=CREAM,activebackground=BURG,activeforeground=CREAM)
@@ -437,4 +440,5 @@ class CookUpWindow:
    self._pad_view_state=state;self.draw_pad_deck();self.draw_wave();self.draw_banner()
   if self.current_suite!=self.app.labbs.selected:self.refresh()
   self.tempo_label.config(text=f'{self.app.bpm:g} BPM  •  '+('PLAYING' if self.app.playing else 'STOPPED'))
+  self.rec_button.config(bg=BURG if self.app.recording else PANEL2)
   self.draw_arrange();self.draw_matrix();self.draw_devices();self.draw_master();self.win.after(250,self.poll)

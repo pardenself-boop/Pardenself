@@ -5,8 +5,9 @@ import math
 import os
 from pathlib import Path
 import tempfile
+from pad_patterns import step_velocity, PadTakes
 
-FORMAT = 'toolboxx.project.v2'
+FORMAT = 'toolboxx.project.v3'
 
 
 def _relative(path, folder):
@@ -42,7 +43,7 @@ def snapshot(app, destination):
         if sample is not None and not paths[index]:
             raise ValueError(f'Pad {index + 1} has no source path; reload its WAV before saving')
     return {
-        'format': FORMAT, 'version': '2.0', 'bpm': app.bpm,
+        'format': FORMAT, 'version': '3.0', 'bpm': app.bpm,
         'arranger': arranger, 'pattern': copy.deepcopy(app.pattern),
         'patterns': copy.deepcopy(app.patterns), 'mapping': dict(app.mapping),
         'sample_paths': [_relative(p, folder) if p else None for p in paths],
@@ -88,7 +89,7 @@ def stage_project(source):
     data = json.loads(source.read_text(encoding='utf-8'), parse_constant=reject_constant)
     if not isinstance(data, dict):
         raise ValueError('Project must be a JSON object')
-    if data.get('format') not in (None, FORMAT):
+    if data.get('format') not in (None, 'toolboxx.project.v2', FORMAT):
         raise ValueError('Unsupported project format')
     bpm = _number(data.get('bpm'), 'tempo', positive=True)
     patterns = data.get('patterns')
@@ -100,8 +101,9 @@ def stage_project(source):
         if not isinstance(pattern, list) or len(pattern) != 32:
             raise ValueError(f'Pattern {name} must have 32 pads')
         for row in pattern:
-            if not isinstance(row, list) or len(row) != 16 or any(type(v) is not bool for v in row):
-                raise ValueError(f'Pattern {name} must contain 16 boolean steps per pad')
+            if not isinstance(row, list) or len(row) != 16:
+                raise ValueError(f'Pattern {name} must contain 16 steps per pad')
+            for value in row:step_velocity(value)
     fallback = data.get('pattern', next(iter(patterns.values())))
     pattern = patterns.get('main', fallback)
     if pattern not in patterns.values():
@@ -203,6 +205,9 @@ def load_project(app, source):
         app.bpm = staged['bpm']
         app.patterns = staged['patterns']
         app.pattern = staged['pattern']
+        app.pad_takes = PadTakes()
+        app._tick_started = None
+        app._pad_skip_once = {}
         app.mapping = staged['mapping']
         if staged['controller'] is not None:
             if hasattr(app, 'hardware_midi'):

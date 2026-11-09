@@ -3,6 +3,7 @@ import math
 from street_bounce import bounce
 from street_song_bounce import ScheduledEngine
 from audio_regions import AudioRegions
+from pad_patterns import step_velocity
 
 
 def collect_hits(arranger, patterns, bpm, end_beat):
@@ -11,7 +12,7 @@ def collect_hits(arranger, patterns, bpm, end_beat):
         raise ValueError('BPM must be 30–240')
     if not isinstance(end_beat, (int, float)) or not math.isfinite(end_beat) or not 0 < end_beat <= 1000:
         raise ValueError('Invalid export length')
-    hits=[]
+    hits={}
     for clip in arranger.clips:
         if clip.get('kind', 'pattern') != 'pattern' or not arranger.track_audible(clip['track']):
             continue
@@ -21,16 +22,18 @@ def collect_hits(arranger, patterns, bpm, end_beat):
         if not all(map(math.isfinite,(start,length,offset))) or length<=0: raise ValueError('Invalid clip timing')
         for pad,row in enumerate(pattern[:32]):
             for step,on in enumerate(row[:16]):
-                if not on: continue
+                velocity=step_velocity(on)
+                if not velocity: continue
                 phase=step/4
                 first=math.ceil((offset-phase-1e-9)/4)
                 last=math.floor((offset+length-phase-1e-9)/4)
                 for k in range(first,last+1):
                     beat=start+phase+4*k-offset
                     if max(0,start)-1e-8 <= beat < min(end_beat,start+length)-1e-8:
-                        hits.append({'pad':pad+1,'beat':max(0,beat)})
+                        key=(round(max(0,beat),9),pad+1)
+                        hits[key]=max(hits.get(key,0.),velocity)
                         if len(hits)>20000: raise ValueError('Too many pad hits')
-    return sorted(hits,key=lambda h:(h['beat'],h['pad']))
+    return [{'pad':pad,'beat':beat,'velocity':velocity} for (beat,pad),velocity in sorted(hits.items())]
 
 
 class TrackCityRender(ScheduledEngine):

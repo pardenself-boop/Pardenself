@@ -1,12 +1,13 @@
 """BOOM BAP TOOLBOXX v0.4 - Windows prototype, virtual Maschine Studio + sampler."""
-import json, math, queue, threading, wave, tkinter as tk
+import json, math, queue, threading, time, wave, tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
 from array import array
 from arranger_core import Arranger
 from arranger_ranges import RangeEditor
 from surface_context import SurfaceContext
-from arrangement_playback import hits_at, advance
+from arrangement_playback import velocity_hits_at, advance
+from pad_patterns import PadTakes, pattern_step, performance_beat
 from audio_regions import AudioRegions, regions_starting
 from suite_registry import SUITES, SuiteRouter
 from labb_engine import LabbEngine, LABBS
@@ -21,6 +22,8 @@ from midi_activity import MidiActivity
 C={'bg':'#17151c','panel':'#28212d','cream':'#f3e5c9','mint':'#8ce3c9','orange':'#d7773d','burgundy':'#81374f','purple':'#7043ad','dim':'#a9a0ad'}
 PAGES=['TRACK CITY','CHOP LABB','PAD LABB','INSTRUMENT','MIXER','MIDI MAP']
 COMMANDS=['PLAY/STOP','RECORD','PAGE NEXT','PAGE PREV','BANK NEXT','BANK PREV','JOG +','JOG -','JOG MODE','UNDO','REDO','MODE MRQ','MODE TRK','MODE ARR','LOOP START -','LOOP START +','LOOP END -','LOOP END +','LOOP MOVE -','LOOP MOVE +','COPY','PASTE','PASTE MERGE','SPLIT','JOG CLICK','JOG BACK','JOG SHIFT','HW JOG +','HW JOG -','SUITE NEXT','SUITE PREV','SUITE CLICK','SUITE BROWSER','TRACK MUTE','TRACK SOLO','LABB NEXT','LABB PREV','LABB PLAY','LABB BROWSER','LABB ARM','LABB NOTE +','LABB NOTE -','LABB NOTE PLAY','LABB CLIP']+[f'EDIT:{op}' for op in ('SELECT','MOVE','TRACK MOVE','TRIM LEFT','TRIM RIGHT','SLIP','MARQUEE','LOOP START','LOOP END','LOOP MOVE')]+[f'PAD {i+1}' for i in range(32)]+[f'BANK PAD {i+1}' for i in range(16)]+['RANGE COPY','RANGE CUT','RANGE PASTE','RANGE DELETE','RANGE DUPLICATE','RANGE INSERT','LOOP TOGGLE','LOOP ALL','LOOP FOCUS','RESTART','BROWSE SOUNDS','EDIT SOUND','EDIT FX','SOUND PREV','SOUND NEXT','FX PREV','FX NEXT','FX BYPASS']+[f'SURFACE {page}' for page in SurfaceContext.PAGES]+[f'SURFACE KEY {i}' for i in range(1,9)]+[f'SURFACE KNOB {i} +' for i in range(1,9)]
+
+COMMANDS += ['TAKE UNDO','TAKE REDO']
 
 class Engine:
  def __init__(self):
@@ -113,6 +116,7 @@ class App:
   self.suites=SuiteRouter();self.engine=Engine();self.labbs=self.engine.labbs;self.notes=NoteLane();self.note_pitch=48;self.page=0;self.bank=0;self.selected_pad=0;self.playing=False;self.recording=False;self.bpm=84;self.step=0;self.jog_mode=0;self.jog_modes=['PLAYHEAD','SCROLL','ZOOM','CLIP MOVE','CLIP LENGTH','SLICE','LOOP START','LOOP END','LOOP MOVE'];self.playhead=0;self.zoom=1;self.clips=[{'track':0,'start':0,'length':4,'name':'DRUM A'},{'track':1,'start':4,'length':4,'name':'CHOP B'},{'track':2,'start':0,'length':8,'name':'BASS A'}];self.selected_clip=0;self.arr=Arranger();self.range_editor=RangeEditor(self.arr);self.hardware_edit=HardwareEdit(self);self.surface_context=SurfaceContext(self);self.clips=self.arr.clips;self.drag=None;self.marquee_start=None
   self.pattern=[[False]*16 for _ in range(32)];self.patterns={'main':self.pattern};self.mapping={};self.hardware_midi=MidiControlRouter();self.midi_automation=MidiAutomationEngine();self.mix_rack=self.engine.mix_rack;self.learn=None;self.hardware_learn=None;self.last_hardware_learn=None;self.hardware_status='No MIDI input connected';self.midi_connected_name=None;self.midi_port=None;self.midi_thread=None;self.events=queue.Queue(maxsize=2048);self.midi_dropped=0;self.tick_id=None
   self.midi_activity=MidiActivity()
+  self.pad_takes=PadTakes();self._tick_started=None;self._tick_beat=0.;self._pad_skip_once={}
   self.street_dispatch=StreetMidiDispatch(self.hardware_midi,self.midi_automation,self.command,self._midi_note_on,self._midi_note_off,self.apply_midi_mix_changes,pad_command=self._midi_pad_command)
   self._style();self._layout();self._refresh();self.root.after(40,self._poll)
   root.protocol('WM_DELETE_WINDOW',self.close)
@@ -278,7 +282,29 @@ class App:
   self.bank=index//16
   self.selected_pad=index
   self.engine.trigger(index,velocity)
+  if getattr(self,'recording',False) and getattr(self,'playing',False) and velocity>0:self.record_pad(index,velocity)
   self._refresh()
+ def record_pad(self,index,velocity):
+  arr=self.arr
+  beat=performance_beat(self.playhead,self.bpm,arr.loop_start,arr.loop_end,arr.loop_enabled,time.monotonic(),getattr(self,'_tick_beat',None),getattr(self,'_tick_started',None))
+  selected=[c for c in arr.clips if c['id'] in arr.selected]
+  clip=next((c for c in selected if c.get('kind','pattern')=='pattern'),None)
+  if selected and clip is None:return
+  if clip is not None and not clip['start']<=beat<clip['start']+clip['length']:return
+  name=str(clip.get('pattern_id','main')) if clip else 'main'
+  self.patterns.setdefault(name,[[False]*16 for _ in range(32)])
+  step=pattern_step(beat,clip)
+  self.pad_takes.record(self.patterns,name,index,step,velocity)
+  if getattr(self,'_tick_started',None) is not None and step==pattern_step(self.playhead,clip):
+   if not hasattr(self,'_pad_skip_once'):self._pad_skip_once={}
+   self._pad_skip_once[(name,index,step)]=self.playhead
+ def pad_take_history(self,redo=False):
+  if self.recording and self.playing:
+   self.status.config(text='Stop recording or playback before undoing a pad take.');return False
+  changed=(self.pad_takes.redo if redo else self.pad_takes.undo)(self.patterns)
+  if changed:self._pad_skip_once={}
+  self.status.config(text=('Pad take '+('redone' if redo else 'undone')) if changed else 'No matching pad take to restore; later pattern edits are preserved.')
+  self._refresh();return changed
  def toggle_step(self,i):
   p=self.active_pattern()[self.selected_pad];p[i]=not p[i];self._refresh()
  def active_pattern(self):
@@ -287,8 +313,15 @@ class App:
  def toggle_play(self):
   self.playing=not self.playing
   if self.playing:self.tick()
+  else:
+   if self.tick_id:self.root.after_cancel(self.tick_id);self.tick_id=None
+   self.pad_takes.finish()
+   self._pad_skip_once={}
   self._refresh()
- def toggle_rec(self):self.recording=not self.recording;self._refresh()
+ def toggle_rec(self):
+  self.recording=not self.recording
+  if not self.recording:self.pad_takes.finish()
+  self._refresh()
  def add_labb_clip(self):
   clip=self.arr.create(self.arr.focus_track,self.playhead,4.,LABBS[self.labbs.selected].name,'labb')
   clip['labb_index']=self.labbs.selected
@@ -298,8 +331,12 @@ class App:
   self._refresh()
 
  def tick(self):
+  self.tick_id=None
   if not self.playing:return
-  for p in hits_at([c for c in self.arr.clips if self.arr.track_audible(c['track'])],self.patterns,self.playhead):self.engine.trigger(p)
+  self._tick_beat=self.playhead;self._tick_started=time.monotonic()
+  skip={key for key,beat in getattr(self,'_pad_skip_once',{}).items() if abs(beat-self.playhead)<1e-8}
+  self._pad_skip_once={}
+  for p,velocity in velocity_hits_at([c for c in self.arr.clips if self.arr.track_audible(c['track'])],self.patterns,self.playhead,excluded_steps=skip):self.engine.trigger(p,velocity)
   for labb,note,vel,duration in self.notes.events_at(self.arr.clips,self.playhead,self.arr.track_audible):self.labbs.note_on(note,vel,labb,duration)
   for clip in regions_starting([c for c in self.arr.clips if self.arr.track_audible(c['track'])],self.playhead):
    try:
@@ -312,7 +349,7 @@ class App:
  def next_jog(self):self.jog_mode=(self.jog_mode+1)%len(self.jog_modes);self._refresh()
  def jog(self,d):
   m=self.jog_modes[self.jog_mode]
-  if m=='PLAYHEAD':self.playhead=max(0,min(16,self.playhead+d*.25))
+  if m=='PLAYHEAD':self.playhead=max(0,min(16,self.playhead+d*.25));self._tick_started=None
   elif m=='ZOOM':self.zoom=max(.5,min(4,self.zoom+d*.25))
   elif m=='CLIP MOVE' and self.clips:self.arr.move(d*.25)
   elif m=='CLIP LENGTH' and self.clips:self.arr.resize(self.clips[self.selected_clip]['id'],'right',d*.25)
@@ -325,6 +362,7 @@ class App:
  def command(self,name,velocity=1.0):
   if name.startswith('BANK PAD '):self.pad(int(name[9:])-1,velocity)
   elif name.startswith('PAD '):self.trigger_absolute_pad(int(name[4:])-1,velocity)
+  elif name in ('TAKE UNDO','TAKE REDO'):self.pad_take_history(redo=name=='TAKE REDO')
   elif name.startswith('SURFACE KEY '):self.surface_context.key(int(name.split()[-1])-1)
   elif name.startswith('SURFACE KNOB '):
    parts=name.split();self.surface_context.knob(int(parts[2])-1,1 if parts[3]=='+' else -1)
@@ -339,7 +377,7 @@ class App:
    if self.mix_rack.modules:
     i=self.surface_context.fx_index%len(self.mix_rack.modules);self.mix_rack.bypass(i,self.mix_rack.modules[i].enabled);self.sync_fx_window()
   elif name.startswith('RANGE '):self.range_command(name[6:])
-  elif name=='RESTART':self.playhead=0.;self.step=0;self._refresh()
+  elif name=='RESTART':self.playhead=0.;self.step=0;self._tick_started=None;self._refresh()
   elif name=='LOOP TOGGLE':self.arr.loop_enabled=not self.arr.loop_enabled;self._refresh()
   elif name=='LOOP ALL':
    self.arr.checkpoint();self.arr.loop_start=0.;self.arr.loop_end=max(.25,max((c['start']+c['length'] for c in self.arr.clips),default=16.));self._refresh()

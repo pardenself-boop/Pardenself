@@ -1,12 +1,12 @@
-# BOOM BAP TOOLBOXX — Build 064
+# BOOM BAP TOOLBOXX — Build 065
 
 Native Windows DAW prototype with Cook Up Matrix, 22 LABBs, a 32-slot sample deck, Track City, our sound banks, real master FX, and Native Instruments Maschine Studio control mapping.
 
 ## Windows installer
 
-[Download Build 064](https://github.com/pardenself-boop/Pardenself/releases/tag/build-064). Choose **BOOM_BAP_TOOLBOXX_Setup_064.exe**. This single installer includes the app, Python runtime, audio/MIDI libraries and sound-check shortcut. You do not need to install Python or manage source files to run the installed app.
+[Download Build 065](https://github.com/pardenself-boop/Pardenself/releases/tag/build-065). Choose **BOOM_BAP_TOOLBOXX_Setup_065.exe**. This single installer includes the app, Python runtime, audio/MIDI libraries and sound-check shortcut. You do not need to install Python or manage source files to run the installed app.
 
-Build 064 is an unsigned development release. Windows 11 audio playback and physical Maschine Studio operation still need testing on the target PC. Native Studio HID, screens/LEDs, a VST build, and FX explicitly marked as previews are not implemented.
+Build 065 is an unsigned development release. Windows 11 audio playback and physical Maschine Studio operation still need testing on the target PC. Native Studio HID, screens/LEDs, a VST build, and FX explicitly marked as previews are not implemented.
 
 ## Updates
 
@@ -20,6 +20,10 @@ Open **MENU → CHECK FOR UPDATES…**, check, download, then save your project 
 
 Open **MENU → AUDIO + MIDI SETUP…** from Cook Up. Select your output, click START AUDIO, then TEST BASS or TEST KEYS. Scan/select the Studio input and CONNECT. The live log shows note/CC events; COPY TEST REPORT lets you paste the device status and recent events into support chat. The setup window shares the DAW engine and MIDI connection and leaves them running when closed.
 
+## Record sample pads
+
+Select a pattern clip, set a loop covering it, arm REC and start playback. Play your learned pads to overdub sixteenth-note hits with their incoming velocity. Stop recording/playback, then use **MENU → UNDO LAST PAD TAKE / REDO LAST PAD TAKE** if needed. These take commands are separate from arranger undo. Velocity is preserved in playback, project files and WAV bounce. Older projects load; new saves use project v3, which older builds cannot open—keep an original copy if you need to return to them.
+
 ## Controller workflow
 
 Open **STUDIO MAP** for the editable physical-control diagram and guided sixteen-pad learn. Arrange/Loop/Sound/Browse/FX contexts keep soft keys and encoders in sync with our instruments and chain. The display areas are software mirrors; physical screen output is not implemented. Use **MASCHINE SETUP** to scan/select the Studio's Controller Editor MIDI input, connect, choose a command/mode, and learn a physical control. Use **BANK PAD 1–16** for one physical pad map that follows the DAW bank; **PAD 1–32** remain absolute assignments. Projects save both controller bindings and audio source references.
@@ -30,7 +34,7 @@ The Start Menu **STREET SOUND CHECK (Audio + MIDI)** shortcut opens the test win
 
 ## Source and build evidence
 
-- [Build 064 details](BUILD_064_README.md)
+- [Build 065 details](BUILD_065_README.md)
 - [Workflow references and parity gaps](WORKFLOW_REFERENCE_061.md)
 - [Controller guide](CONTROLLER_MASCHINE_STUDIO.md)
 - [Windows test guide](TEST_AUDIO_MIDI_WINDOWS.md)

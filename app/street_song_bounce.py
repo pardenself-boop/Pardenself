@@ -4,6 +4,7 @@ import json
 import math
 from pathlib import Path
 from street_bounce import bounce
+from pad_patterns import step_velocity
 
 
 def validate_song(song):
@@ -26,6 +27,7 @@ def validate_song(song):
         if type(pad) is not int or not 1 <= pad <= 32: raise ValueError('Hit pad must be 1–32')
         if isinstance(beat, bool) or not isinstance(beat, (int, float)) or not math.isfinite(beat) or not 0 <= beat < bars*4:
             raise ValueError('Hit beat outside song')
+        step_velocity(hit.get('velocity',1.))
     return bpm, bars
 
 
@@ -64,7 +66,7 @@ def expand_patterns(song):
                     raise ValueError('Pattern event pad or step outside range')
                 beat = (start * 4) + (repeat * steps / 4) + (step / 4)
                 if beat >= bars * 4: raise ValueError('Pattern clip extends beyond song')
-                result.append({'pad': pad, 'beat': beat})
+                result.append({'pad': pad, 'beat': beat, 'velocity':step_velocity(event.get('velocity',1.))})
                 if len(result) > 20000: raise ValueError('Too many scheduled hits')
     validate_song({**song, 'hits': result})
     return result
@@ -75,15 +77,16 @@ class ScheduledEngine:
         self.engine = engine
         self.sr = engine.sr
         self.cursor = 0
-        self.events = sorted((round(hit['beat'] * 60 / bpm * self.sr), hit['pad'] - 1) for hit in hits)
+        self.events = sorted((round(hit['beat'] * 60 / bpm * self.sr), hit['pad'] - 1, step_velocity(hit.get('velocity',1.))) for hit in hits)
         self.next_event = 0
     def render(self, frames):
         result = []
         target = self.cursor + frames
         while self.cursor < target:
             while self.next_event < len(self.events) and self.events[self.next_event][0] <= self.cursor:
-                _, pad = self.events[self.next_event]
-                self.engine.trigger(pad)
+                _, pad, velocity = self.events[self.next_event]
+                if velocity==1.:self.engine.trigger(pad)
+                elif velocity>0:self.engine.trigger(pad,velocity)
                 self.next_event += 1
             boundary = min(target, self.events[self.next_event][0]) if self.next_event < len(self.events) else target
             count = boundary - self.cursor

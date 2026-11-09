@@ -54,7 +54,7 @@ class SurfaceContext:
             if hasattr(app,'sync_fx_window'):app.sync_fx_window()
         elif index<3:
             app.arr.loop_edit(('body','start','end')[index],direction*.25)
-        elif index==3:app.playhead=max(0,app.playhead+direction*.25)
+        elif index==3:app.playhead=max(0,app.playhead+direction*.25);app._tick_started=None
         elif index==4:app.arr.focus_track=max(0,app.arr.focus_track+direction);app.range_editor.select()
         else:
             operation=('MOVE','TRIM LEFT','TRIM RIGHT')[index-5]
