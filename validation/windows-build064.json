@@ -1,0 +1,26 @@
+{
+  "build": "064",
+  "source_commit": "ac32bcb9372706f3e5d6c5bfd589958646716a30",
+  "workflow_run": 42566632675,
+  "workflow_url": "https://github.com/pardenself-boop/Pardenself/actions/runs/42566632675",
+  "runner": "Windows Server 2022",
+  "unit_tests": 184,
+  "checks": {
+    "package": "passed",
+    "upgrade_from_063": "passed",
+    "user_file_preservation": "passed",
+    "installed_startup": "passed",
+    "normal_launch_and_close": "passed",
+    "uninstall": "passed",
+    "live_updater_from_063": "passed",
+    "download_hash_verification": "passed",
+    "native_setup_and_clipboard": "passed",
+    "no_automatic_device_connections": "passed"
+  },
+  "installer": "BOOM_BAP_TOOLBOXX_Setup_064.exe",
+  "sha256": "443efef12dfdfac0ba71233aa97edbebfe5cbb0f74be6703c9b129bed6a9be2d",
+  "bytes": 28805942,
+  "signature": "unsigned",
+  "physical_windows11_audio_midi": "unverified",
+  "network_notes": "GitHub returned a transient 504 during the prior-version CI download and first local release download. CI retry and local retry succeeded."
+}
