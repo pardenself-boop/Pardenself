@@ -1,0 +1,28 @@
+{
+  "build": "065",
+  "source_commit": "34b755aae3abd29db3d2ee174a4a1e6677e42ee0",
+  "workflow_run": 42599807028,
+  "workflow_url": "https://github.com/pardenself-boop/Pardenself/actions/runs/42599807028",
+  "runner": "Windows Server 2022",
+  "unit_tests": 200,
+  "checks": {
+    "package": "passed",
+    "upgrade_from_064": "passed",
+    "user_file_preservation": "passed",
+    "installed_startup": "passed",
+    "normal_launch_and_close": "passed",
+    "uninstall": "passed",
+    "live_updater_from_064": "passed",
+    "download_hash_verification": "passed",
+    "native_learned_pad_recording_undo_redo_save_load": "passed",
+    "legacy_v2_project_read": "passed",
+    "velocity_audio_render": "passed",
+    "live_monitor_no_double_trigger": "passed"
+  },
+  "installer": "BOOM_BAP_TOOLBOXX_Setup_065.exe",
+  "sha256": "9be6700b3363b709e2ecdd6d14ae789029d1ed1ddd007c5c81a4157c32bdf5f6",
+  "bytes": 28810949,
+  "new_project_format": "toolboxx.project.v3; not readable by older app builds",
+  "signature": "unsigned",
+  "physical_windows11_audio_midi": "unverified"
+}
