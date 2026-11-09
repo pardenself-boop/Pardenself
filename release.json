@@ -1,6 +1,6 @@
 {
-  "build": "063",
-  "version": "0.63.0",
+  "build": "064",
+  "version": "0.64.0",
   "executable": "BOOM_BAP_TOOLBOXX",
-  "installer": "BOOM_BAP_TOOLBOXX_Setup_063.exe"
+  "installer": "BOOM_BAP_TOOLBOXX_Setup_064.exe"
 }

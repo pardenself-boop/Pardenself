@@ -124,6 +124,7 @@ class CookUpWindow:
   Planned features remain visible in the catalog but cannot be falsely enabled.
   """
   menu=tk.Menu(self.win,tearoff=False,bg=PANEL,fg=CREAM,activebackground=BURG,activeforeground=CREAM)
+  menu.add_command(label='AUDIO + MIDI SETUP…',command=self.app.open_audio_midi)
   menu.add_command(label='CHECK FOR UPDATES…',command=self.app.open_updates)
   menu.add_separator()
   for group,labels in FEATURES.items():

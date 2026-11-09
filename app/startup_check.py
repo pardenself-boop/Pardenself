@@ -31,6 +31,10 @@ def run():
         app.open_updates()
         assert app.update_window.win.winfo_exists(), 'Update window did not open'
         assert not app.update_window.busy, 'Updater started a background request without a click'
+        app.open_audio_midi()
+        assert app.audio_midi_window.win.winfo_exists(), 'Audio/MIDI setup did not open'
+        assert app.engine.stream is None, 'Opening setup started audio automatically'
+        assert app.midi_port is None, 'Opening setup connected MIDI automatically'
         window.refresh()
         root.update()
         if errors:

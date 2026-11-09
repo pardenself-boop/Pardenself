@@ -2,7 +2,11 @@
 
 Use the installed app. Python and source files are not needed.
 
-## Audio first
+## In Cook Up (Build 064+)
+
+Open **MENU → AUDIO + MIDI SETUP…**. Select an output and START AUDIO, then TEST BASS or TEST KEYS. In the same window, scan/select the Studio input and CONNECT. Press pads or turn knobs to see note/CC values and activity. Use LEARN / STUDIO MAP to teach controls. COPY TEST REPORT copies the output/status and last 64 MIDI messages for support. Closing setup keeps the DAW connection and playback intact. Opening it does not automatically connect or start devices.
+
+## Standalone audio test
 
 1. Open Windows Start and search for **STREET SOUND CHECK**. Open **STREET SOUND CHECK (Audio + MIDI)** under BOOM BAP TOOLBOXX.
 2. Select your headphones, speakers or audio interface under **Windows output device**. Click **REFRESH DEVICES** if needed, then **START AUDIO**.

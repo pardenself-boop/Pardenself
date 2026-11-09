@@ -22,13 +22,13 @@ jobs:
       - name: Test, package, verify startup and compile installer
         shell: pwsh
         run: ./BUILD_SETUP_WINDOWS.ps1 -NoOpen
-      - name: Prepare installed Build 062 for upgrade check
+      - name: Prepare installed Build 063 for upgrade check
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $previous = Join-Path $env:RUNNER_TEMP 'TOOLBOXX_Setup_062.exe'
-          Invoke-WebRequest -Uri 'https://github.com/pardenself-boop/Pardenself/releases/download/build-062/BOOM_BAP_TOOLBOXX_Setup_062.exe' -OutFile $previous
-          if ((Get-FileHash $previous -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4088889f6bbae2951d3989fb468135397cbfb491277a89234cd82855fb928824') { throw 'Previous installer checksum mismatch' }
+          $previous = Join-Path $env:RUNNER_TEMP 'TOOLBOXX_Setup_063.exe'
+          Invoke-WebRequest -Uri 'https://github.com/pardenself-boop/Pardenself/releases/download/build-063/BOOM_BAP_TOOLBOXX_Setup_063.exe' -OutFile $previous
+          if ((Get-FileHash $previous -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'a62fbd8412b6780f45b8190aecf9b9bc3ff1e8400417ddef1ed3775ed22f03cf') { throw 'Previous installer checksum mismatch' }
           $installDir = Join-Path $env:RUNNER_TEMP 'TOOLBOXX-install-check'
           $previousSetup = Start-Process -FilePath $previous -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/DIR="' + $installDir + '"') -Wait -PassThru
           if ($previousSetup.ExitCode -ne 0) { throw 'Previous version installation failed' }

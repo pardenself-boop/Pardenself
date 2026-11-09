@@ -16,6 +16,7 @@ from street_midi_dispatch import StreetMidiDispatch
 from midi_automation_engine import MidiAutomationEngine
 from mix_rack import MixRack, MODULES
 from ui_shortcuts import dispatch_shortcut
+from midi_activity import MidiActivity
 
 C={'bg':'#17151c','panel':'#28212d','cream':'#f3e5c9','mint':'#8ce3c9','orange':'#d7773d','burgundy':'#81374f','purple':'#7043ad','dim':'#a9a0ad'}
 PAGES=['TRACK CITY','CHOP LABB','PAD LABB','INSTRUMENT','MIXER','MIDI MAP']
@@ -111,6 +112,7 @@ class App:
   self.root=root;root.title('BOOM BAP TOOLBOXX | COOK UP v1.4');root.geometry('1250x830');root.configure(bg=C['bg'])
   self.suites=SuiteRouter();self.engine=Engine();self.labbs=self.engine.labbs;self.notes=NoteLane();self.note_pitch=48;self.page=0;self.bank=0;self.selected_pad=0;self.playing=False;self.recording=False;self.bpm=84;self.step=0;self.jog_mode=0;self.jog_modes=['PLAYHEAD','SCROLL','ZOOM','CLIP MOVE','CLIP LENGTH','SLICE','LOOP START','LOOP END','LOOP MOVE'];self.playhead=0;self.zoom=1;self.clips=[{'track':0,'start':0,'length':4,'name':'DRUM A'},{'track':1,'start':4,'length':4,'name':'CHOP B'},{'track':2,'start':0,'length':8,'name':'BASS A'}];self.selected_clip=0;self.arr=Arranger();self.range_editor=RangeEditor(self.arr);self.hardware_edit=HardwareEdit(self);self.surface_context=SurfaceContext(self);self.clips=self.arr.clips;self.drag=None;self.marquee_start=None
   self.pattern=[[False]*16 for _ in range(32)];self.patterns={'main':self.pattern};self.mapping={};self.hardware_midi=MidiControlRouter();self.midi_automation=MidiAutomationEngine();self.mix_rack=self.engine.mix_rack;self.learn=None;self.hardware_learn=None;self.last_hardware_learn=None;self.hardware_status='No MIDI input connected';self.midi_connected_name=None;self.midi_port=None;self.midi_thread=None;self.events=queue.Queue(maxsize=2048);self.midi_dropped=0;self.tick_id=None
+  self.midi_activity=MidiActivity()
   self.street_dispatch=StreetMidiDispatch(self.hardware_midi,self.midi_automation,self.command,self._midi_note_on,self._midi_note_off,self.apply_midi_mix_changes,pad_command=self._midi_pad_command)
   self._style();self._layout();self._refresh();self.root.after(40,self._poll)
   root.protocol('WM_DELETE_WINDOW',self.close)
@@ -214,6 +216,10 @@ class App:
   self.scan_audio();self.scan_midi()
  def show_workstation(self):
   self.root.deiconify();self.root.lift()
+ def open_audio_midi(self):
+  from audio_midi_window import AudioMidiWindow
+  if hasattr(self,'audio_midi_window') and self.audio_midi_window.win.winfo_exists():self.audio_midi_window.win.lift()
+  else:self.audio_midi_window=AudioMidiWindow(self)
  def open_updates(self):
   from update_window import UpdateWindow
   if hasattr(self,'update_window') and self.update_window.win.winfo_exists():self.update_window.win.lift()
@@ -483,16 +489,21 @@ class App:
    except Exception as e:messagebox.showerror('WAV load',str(e))
    self._refresh()
  def scan_audio(self):
+  selected=self.audio_device.get()
   try:
    import sounddevice as sd
    devices=sd.query_devices();self.audio_choices=[('System default',None)]+[(str(i)+'  '+d['name'],i) for i,d in enumerate(devices) if d['max_output_channels']>=2]
-   self.audio_device['values']=[v[0] for v in self.audio_choices]
-   if self.audio_choices:self.audio_device.current(0)
-  except Exception as e:self.audio_choices=[];self.status.config(text='Audio scan: '+str(e))
+   names=[v[0] for v in self.audio_choices];self.audio_device['values']=names
+   if selected in names:self.audio_device.set(selected)
+   else:self.audio_device.current(0)
+   return self.audio_choices
+  except Exception as e:
+   self.audio_choices=[];self.audio_device['values']=[];self.audio_device.set('');self.status.config(text='Audio scan: '+str(e));return []
  def start_audio(self):
   try:
    i=self.audio_device.current();device=self.audio_choices[i][1] if i>=0 else None;self.engine.start(device);self.status.config(text='Audio started; '+self.audio_device.get())
-  except Exception as e:messagebox.showerror('Audio',str(e))
+   return True
+  except Exception as e:messagebox.showerror('Audio',str(e));return False
  def scan_midi(self):
   selected=self.midi_device.get()
   try:
@@ -600,6 +611,7 @@ class App:
  def _poll(self):
   try:
    for m in self._drain_midi():
+    if hasattr(self,'midi_activity'):self.midi_activity.record(m)
     if self._learn_hardware_message(m):continue
     # Legacy MIDI Learn is deliberately processed before dispatch.
     kind='note' if m.type in ('note_on','note_off') else 'cc' if m.type=='control_change' else None
