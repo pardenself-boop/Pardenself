@@ -53,6 +53,8 @@ def snapshot(app, destination):
         'note_lane': app.notes.serialize(),
         'mix_rack': json.loads(app.engine.mix_rack.to_json()),
         'controller': app.hardware_midi.serialize() if hasattr(app, 'hardware_midi') else None,
+        'transport': {'metronome':getattr(app,'metronome_enabled',False),
+                      'count_in':getattr(app,'count_in_enabled',False)},
     }
 
 
@@ -92,6 +94,9 @@ def stage_project(source):
     if data.get('format') not in (None, 'toolboxx.project.v2', FORMAT):
         raise ValueError('Unsupported project format')
     bpm = _number(data.get('bpm'), 'tempo', positive=True)
+    transport=data.get('transport',{})
+    if not isinstance(transport,dict) or any(type(transport.get(key,False)) is not bool for key in ('metronome','count_in')):
+        raise ValueError('Invalid transport settings')
     patterns = data.get('patterns')
     if patterns is None:
         patterns = {'main': data.get('pattern')}
@@ -170,6 +175,7 @@ def stage_project(source):
                 raise ValueError(f'Audio region could not load: {clip["path"]}: {exc}') from exc
     return dict(bpm=bpm, arr=arr, notes=notes, suites=suites, engine=engine,
                 patterns=patterns, pattern=pattern, mapping=mapping, controller=controller,
+                transport=transport,
                 legacy_media='sample_paths' not in data)
 
 
@@ -208,6 +214,12 @@ def load_project(app, source):
         app.pad_takes = PadTakes()
         app._tick_started = None
         app._pad_skip_once = {}
+        app.metronome_enabled = staged['transport'].get('metronome',False)
+        app.count_in_enabled = staged['transport'].get('count_in',False)
+        app._count_in_remaining = 0
+        app._count_in_active = False
+        app._next_tick_time = None
+        app.engine.clear_clicks()
         app.mapping = staged['mapping']
         if staged['controller'] is not None:
             if hasattr(app, 'hardware_midi'):

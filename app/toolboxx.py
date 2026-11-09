@@ -18,16 +18,22 @@ from midi_automation_engine import MidiAutomationEngine
 from mix_rack import MixRack, MODULES
 from ui_shortcuts import dispatch_shortcut
 from midi_activity import MidiActivity
+from metronome import Metronome
 
 C={'bg':'#17151c','panel':'#28212d','cream':'#f3e5c9','mint':'#8ce3c9','orange':'#d7773d','burgundy':'#81374f','purple':'#7043ad','dim':'#a9a0ad'}
 PAGES=['TRACK CITY','CHOP LABB','PAD LABB','INSTRUMENT','MIXER','MIDI MAP']
 COMMANDS=['PLAY/STOP','RECORD','PAGE NEXT','PAGE PREV','BANK NEXT','BANK PREV','JOG +','JOG -','JOG MODE','UNDO','REDO','MODE MRQ','MODE TRK','MODE ARR','LOOP START -','LOOP START +','LOOP END -','LOOP END +','LOOP MOVE -','LOOP MOVE +','COPY','PASTE','PASTE MERGE','SPLIT','JOG CLICK','JOG BACK','JOG SHIFT','HW JOG +','HW JOG -','SUITE NEXT','SUITE PREV','SUITE CLICK','SUITE BROWSER','TRACK MUTE','TRACK SOLO','LABB NEXT','LABB PREV','LABB PLAY','LABB BROWSER','LABB ARM','LABB NOTE +','LABB NOTE -','LABB NOTE PLAY','LABB CLIP']+[f'EDIT:{op}' for op in ('SELECT','MOVE','TRACK MOVE','TRIM LEFT','TRIM RIGHT','SLIP','MARQUEE','LOOP START','LOOP END','LOOP MOVE')]+[f'PAD {i+1}' for i in range(32)]+[f'BANK PAD {i+1}' for i in range(16)]+['RANGE COPY','RANGE CUT','RANGE PASTE','RANGE DELETE','RANGE DUPLICATE','RANGE INSERT','LOOP TOGGLE','LOOP ALL','LOOP FOCUS','RESTART','BROWSE SOUNDS','EDIT SOUND','EDIT FX','SOUND PREV','SOUND NEXT','FX PREV','FX NEXT','FX BYPASS']+[f'SURFACE {page}' for page in SurfaceContext.PAGES]+[f'SURFACE KEY {i}' for i in range(1,9)]+[f'SURFACE KNOB {i} +' for i in range(1,9)]
 
-COMMANDS += ['TAKE UNDO','TAKE REDO']
+COMMANDS += ['TAKE UNDO','TAKE REDO','METRONOME TOGGLE','COUNT IN TOGGLE']
 
 class Engine:
  def __init__(self):
   self.labbs=LabbEngine();self.mix_rack=MixRack();self.samples=[None]*32;self.sample_paths=[None]*32;self.regions=AudioRegions();self.voices=[];self.lock=threading.RLock();self.sr=48000;self.stream=None;self.audio_status='Audio stopped';self.on_message=lambda m:None
+  self.metronome=Metronome()
+ def click(self,accent=False):
+  with self.lock:self.metronome.trigger(accent)
+ def clear_clicks(self):
+  with self.lock:self.metronome.clear()
  def load(self,index,path):
   if not 0 <= index < len(self.samples):raise ValueError("Pad index must be 0–31")
   with wave.open(path,'rb') as w:
@@ -69,6 +75,9 @@ class Engine:
    instruments=self.labbs.render_raw(frames)
    out=[a+b for a,b in zip(out,instruments)]
    out=self.mix_rack.process(out,self.sr)
+   if self.metronome.voices:
+    click=self.metronome.render(frames,self.sr)
+    out=[sample+beat for sample,beat in zip(out,click)]
   return self.labbs.master.process(out)
  def start(self,device=None):
   """Start a stream, releasing partially opened devices after failures."""
@@ -107,6 +116,7 @@ class Engine:
    try:stream.stop()
    finally:stream.close()
   self.audio_status='Audio stopped'
+  self.clear_clicks()
 
 from hardware_edit import HardwareEdit
 
@@ -117,6 +127,7 @@ class App:
   self.pattern=[[False]*16 for _ in range(32)];self.patterns={'main':self.pattern};self.mapping={};self.hardware_midi=MidiControlRouter();self.midi_automation=MidiAutomationEngine();self.mix_rack=self.engine.mix_rack;self.learn=None;self.hardware_learn=None;self.last_hardware_learn=None;self.hardware_status='No MIDI input connected';self.midi_connected_name=None;self.midi_port=None;self.midi_thread=None;self.events=queue.Queue(maxsize=2048);self.midi_dropped=0;self.tick_id=None
   self.midi_activity=MidiActivity()
   self.pad_takes=PadTakes();self._tick_started=None;self._tick_beat=0.;self._pad_skip_once={}
+  self.metronome_enabled=False;self.count_in_enabled=False;self._count_in_remaining=0;self._count_in_active=False
   self.street_dispatch=StreetMidiDispatch(self.hardware_midi,self.midi_automation,self.command,self._midi_note_on,self._midi_note_off,self.apply_midi_mix_changes,pad_command=self._midi_pad_command)
   self._style();self._layout();self._refresh();self.root.after(40,self._poll)
   root.protocol('WM_DELETE_WINDOW',self.close)
@@ -282,7 +293,7 @@ class App:
   self.bank=index//16
   self.selected_pad=index
   self.engine.trigger(index,velocity)
-  if getattr(self,'recording',False) and getattr(self,'playing',False) and velocity>0:self.record_pad(index,velocity)
+  if getattr(self,'recording',False) and getattr(self,'playing',False) and not getattr(self,'_count_in_active',False) and velocity>0:self.record_pad(index,velocity)
   self._refresh()
  def record_pad(self,index,velocity):
   arr=self.arr
@@ -312,15 +323,25 @@ class App:
   return self.patterns.setdefault(str(clip.get('pattern_id','main')) if clip else 'main',[[False]*16 for _ in range(32)])
  def toggle_play(self):
   self.playing=not self.playing
-  if self.playing:self.tick()
+  if self.playing:
+   self._next_tick_time=time.monotonic()
+   self._count_in_remaining=16 if self.recording and getattr(self,'count_in_enabled',False) else 0
+   self._count_in_active=self._count_in_remaining>0
+   self.tick()
   else:
    if self.tick_id:self.root.after_cancel(self.tick_id);self.tick_id=None
    self.pad_takes.finish()
    self._pad_skip_once={}
+   self._count_in_remaining=0;self._count_in_active=False;self._tick_started=None;self.engine.clear_clicks()
+   self._next_tick_time=None
   self._refresh()
  def toggle_rec(self):
   self.recording=not self.recording
-  if not self.recording:self.pad_takes.finish()
+  if not self.recording:
+   self.pad_takes.finish()
+   if getattr(self,'_count_in_active',False):
+    self._count_in_remaining=0;self._count_in_active=False
+    if not getattr(self,'metronome_enabled',False):self.engine.clear_clicks()
   self._refresh()
  def add_labb_clip(self):
   clip=self.arr.create(self.arr.focus_track,self.playhead,4.,LABBS[self.labbs.selected].name,'labb')
@@ -333,7 +354,16 @@ class App:
  def tick(self):
   self.tick_id=None
   if not self.playing:return
+  remaining=getattr(self,'_count_in_remaining',0)
+  if remaining:
+   self._tick_started=None
+   if remaining%4==0:self.engine.click(accent=remaining==16)
+   self._count_in_remaining-=1
+   self._refresh();self.schedule_tick()
+   return
+  self._count_in_active=False
   self._tick_beat=self.playhead;self._tick_started=time.monotonic()
+  if getattr(self,'metronome_enabled',False) and abs(self.playhead-round(self.playhead))<1e-8:self.engine.click(accent=round(self.playhead)%4==0)
   skip={key for key,beat in getattr(self,'_pad_skip_once',{}).items() if abs(beat-self.playhead)<1e-8}
   self._pad_skip_once={}
   for p,velocity in velocity_hits_at([c for c in self.arr.clips if self.arr.track_audible(c['track'])],self.patterns,self.playhead,excluded_steps=skip):self.engine.trigger(p,velocity)
@@ -345,7 +375,14 @@ class App:
   self.playhead=advance(self.playhead,self.arr.loop_start,self.arr.loop_end,self.arr.loop_enabled)
   self.step=int(round(self.playhead*4))%16
   self._refresh()
-  self.tick_id=self.root.after(int(60000/self.bpm/4),self.tick)
+  self.schedule_tick()
+ def schedule_tick(self):
+  now=time.monotonic();interval=60./self.bpm/4
+  deadline=getattr(self,'_next_tick_time',None)
+  deadline=now+interval if deadline is None else deadline+interval
+  if deadline<now-interval:deadline=now+interval
+  self._next_tick_time=deadline
+  self.tick_id=self.root.after(max(1,round((deadline-now)*1000)),self.tick)
  def next_jog(self):self.jog_mode=(self.jog_mode+1)%len(self.jog_modes);self._refresh()
  def jog(self,d):
   m=self.jog_modes[self.jog_mode]
@@ -363,6 +400,16 @@ class App:
   if name.startswith('BANK PAD '):self.pad(int(name[9:])-1,velocity)
   elif name.startswith('PAD '):self.trigger_absolute_pad(int(name[4:])-1,velocity)
   elif name in ('TAKE UNDO','TAKE REDO'):self.pad_take_history(redo=name=='TAKE REDO')
+  elif name=='METRONOME TOGGLE':
+   self.metronome_enabled=not self.metronome_enabled
+   if not self.metronome_enabled and not self._count_in_remaining:self.engine.clear_clicks()
+   self._refresh()
+  elif name=='COUNT IN TOGGLE':
+   self.count_in_enabled=not self.count_in_enabled
+   if not self.count_in_enabled:
+    self._count_in_remaining=0;self._count_in_active=False
+    if not self.metronome_enabled:self.engine.clear_clicks()
+   self._refresh()
   elif name.startswith('SURFACE KEY '):self.surface_context.key(int(name.split()[-1])-1)
   elif name.startswith('SURFACE KNOB '):
    parts=name.split();self.surface_context.knob(int(parts[2])-1,1 if parts[3]=='+' else -1)
@@ -638,7 +685,7 @@ class App:
  def _midi_note_on(self,note,velocity):
   if any(c['id'] in self.arr.selected and c.get('kind')=='labb' for c in self.arr.clips):
    self.labbs.note_on(note,velocity,self.notes.armed_labb)
-   if self.recording:
+   if self.recording and not getattr(self,'_count_in_active',False):
     focused=next((c for c in self.arr.clips if c['id'] in self.arr.selected and c.get('kind')=='labb'),None)
     if focused:self.notes.add(focused.get('note_pattern','labb-main'),(self.playhead-focused['start']+focused.get('offset',0))%4,note,velocity)
   elif 36 <= note <= 67:self.trigger_absolute_pad(note-36,velocity)

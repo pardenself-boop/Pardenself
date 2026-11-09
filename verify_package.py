@@ -16,7 +16,7 @@ def verify(root=ROOT):
                 'toolboxx.py', 'cookup_ui.py', 'labb_engine.py',
                 'midi_automation_engine.py', 'app_version.py', 'app_updates.py',
                 'update_window.py', 'audio_midi_window.py', 'midi_activity.py',
-                'pad_patterns.py', 'AUDIO_TEST.wav']
+                'pad_patterns.py', 'metronome.py', 'AUDIO_TEST.wav']
     for name in required:
         path = app / name
         if not path.is_file() or not path.stat().st_size:

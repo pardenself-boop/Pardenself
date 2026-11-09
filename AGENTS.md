@@ -8,6 +8,7 @@ This is an existing Windows 11 Python/Tkinter DAW prototype. Continue the curren
 - Real audio is essential: imported PCM WAV, sample-pad triggers, audio regions, LABB instruments, offline stereo WAV bounce, and Windows playback.
 - Keep VST audio separate from browser UI; do not introduce AudioContext into a VST editor.
 - Use original code and names; do not copy third-party proprietary assets/code.
+- The user has locked the current UI: preserve its layout, colors, artwork, pads, arranger, menus and control positions. Continue backend/audio/MIDI work through existing controls; obtain explicit user direction before any visual change.
 
 ## Working method
 1. Read CODEX_START_HERE.md and inspect app/toolboxx.py, app/street_song_bounce.py, app/track_city_bounce.py (if present), tests, installer scripts.
