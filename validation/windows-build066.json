@@ -1,0 +1,41 @@
+{
+  "build": "066",
+  "source_commit": "dd47ac971ad86a0e0d5194655d56ef539058d364",
+  "workflow_run": 42602111514,
+  "workflow_url": "https://github.com/pardenself-boop/Pardenself/actions/runs/42602111514",
+  "runner": "Windows Server 2022",
+  "unit_tests": 214,
+  "checks": {
+    "package": "passed",
+    "upgrade_from_065": "passed",
+    "user_file_preservation": "passed",
+    "installed_startup": "passed",
+    "normal_launch_and_close": "passed",
+    "uninstall": "passed",
+    "live_updater_from_065": "passed",
+    "download_hash_verification": "passed",
+    "native_count_in_gate_and_record_transition": "passed",
+    "export_excludes_click": "passed",
+    "transport_deadlines": "passed"
+  },
+  "ui": {
+    "cookup_ui.py": {
+      "unchanged_from_build_065": true,
+      "sha256": "9e1d951d9b3d45e2d2cfb034b2bb816976fcaa01a4e859e471e67c055f1eea18"
+    },
+    "controller_map_window.py": {
+      "unchanged_from_build_065": true,
+      "sha256": "68be8e3569c27e723412d43d4392e8e9abf1a3728b22cc6003669e9a16b031ae"
+    },
+    "audio_midi_window.py": {
+      "unchanged_from_build_065": true,
+      "sha256": "e1ace2869a3865b249e171aff4a9d0c9b3c3bf6e023e55e2af9b7fa031b4f14b"
+    }
+  },
+  "workstation_layout_unchanged": true,
+  "installer": "BOOM_BAP_TOOLBOXX_Setup_066.exe",
+  "sha256": "8b7cd04ddc309b226e5fe8478fb6a5f16f38d3ad1c1bedd434e35a765d2c54ac",
+  "bytes": 28817322,
+  "signature": "unsigned",
+  "physical_windows11_audio_midi": "unverified"
+}
